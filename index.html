@@ -1,957 +1,404 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cliente MUD - Fatal Dimensions</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Courier New', monospace;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
-            color: #00ff41;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .header {
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(15px);
-            padding: 1.5rem;
-            border-bottom: 3px solid #00ff41;
-            box-shadow: 0 5px 25px rgba(0, 255, 65, 0.3);
-        }
-
-        .connection-section {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 1rem;
-        }
-
-        .input-group {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        label {
-            color: #00ff41;
-            font-weight: bold;
-            text-shadow: 0 0 8px rgba(0, 255, 65, 0.6);
-            min-width: 60px;
-        }
-
-        input, button {
-            padding: 0.8rem;
-            border: 2px solid #00ff41;
-            background: rgba(0, 0, 0, 0.85);
-            color: #00ff41;
-            font-family: inherit;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            font-size: 14px;
-        }
-
-        input:focus {
-            outline: none;
-            box-shadow: 0 0 20px rgba(0, 255, 65, 0.7);
-            background: rgba(0, 255, 65, 0.1);
-            transform: scale(1.02);
-        }
-
-        button {
-            cursor: pointer;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            min-width: 130px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        button:hover:not(:disabled) {
-            background: #00ff41;
-            color: #000;
-            box-shadow: 0 0 30px rgba(0, 255, 65, 0.9);
-            transform: translateY(-3px);
-        }
-
-        button:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .status-indicator {
-            margin-left: auto;
-            padding: 0.8rem 1.5rem;
-            border-radius: 30px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border: 2px solid;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .status-indicator.connected {
-            background: rgba(0, 255, 65, 0.2);
-            border-color: #00ff41;
-            color: #00ff41;
-            animation: pulseGreen 2s infinite;
-        }
-
-        .status-indicator.disconnected {
-            background: rgba(255, 65, 65, 0.2);
-            border-color: #ff4141;
-            color: #ff4141;
-        }
-
-        .status-indicator.connecting {
-            background: rgba(255, 255, 65, 0.2);
-            border-color: #ffff41;
-            color: #ffff41;
-            animation: pulseYellow 1s infinite;
-        }
-
-        @keyframes pulseGreen {
-            0%, 100% { box-shadow: 0 0 10px rgba(0, 255, 65, 0.4); }
-            50% { box-shadow: 0 0 30px rgba(0, 255, 65, 0.8); }
-        }
-
-        @keyframes pulseYellow {
-            0%, 100% { opacity: 0.7; }
-            50% { opacity: 1; }
-        }
-
-        .api-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 12px;
-            color: #888;
-            padding: 0.8rem;
-            background: rgba(0, 0, 0, 0.6);
-            border-radius: 8px;
-            border: 1px solid rgba(0, 255, 65, 0.2);
-        }
-
-        .api-endpoint {
-            color: #00ff41;
-            font-weight: bold;
-            font-family: monospace;
-        }
-
-        .api-status {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            animation: blink 1s infinite;
-        }
-
-        .status-dot.online { background: #00ff41; }
-        .status-dot.offline { background: #ff4141; animation: none; }
-        .status-dot.testing { background: #ffff41; }
-
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0.3; }
-        }
-
-        .main-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            padding: 1rem;
-            gap: 1rem;
-        }
-
-        .terminal-container {
-            flex: 1;
-            background: rgba(0, 0, 0, 0.95);
-            border: 2px solid #00ff41;
-            border-radius: 15px;
-            overflow-y: auto;
-            padding: 1.5rem;
-            box-shadow: 
-                inset 0 0 50px rgba(0, 255, 65, 0.1),
-                0 0 30px rgba(0, 0, 0, 0.5);
-            position: relative;
-        }
-
-        .terminal-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 30px;
-            background: linear-gradient(to bottom, rgba(0, 255, 65, 0.1), transparent);
-            pointer-events: none;
-            border-radius: 13px 13px 0 0;
-        }
-
-        .output-area {
-            font-size: 14px;
-            line-height: 1.7;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            font-family: 'Courier New', monospace;
-        }
-
-        .message-line {
-            margin-bottom: 1rem;
-            padding: 0.8rem;
-            border-radius: 10px;
-            border-left: 4px solid;
-            backdrop-filter: blur(8px);
-            animation: slideInMessage 0.4s ease-out;
-            position: relative;
-            overflow: hidden;
-        }
-
-        @keyframes slideInMessage {
-            from { 
-                opacity: 0; 
-                transform: translateX(-30px); 
-            }
-            to { 
-                opacity: 1; 
-                transform: translateX(0); 
-            }
-        }
-
-        .message-line::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            width: 2px;
-            background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.1), transparent);
-        }
-
-        .message-line.system {
-            color: #ffff41;
-            background: rgba(255, 255, 65, 0.12);
-            border-left-color: #ffff41;
-        }
-
-        .message-line.error {
-            color: #ff4141;
-            background: rgba(255, 65, 65, 0.18);
-            border-left-color: #ff4141;
-            font-weight: bold;
-        }
-
-        .message-line.user {
-            color: #41ffff;
-            background: rgba(65, 255, 255, 0.12);
-            border-left-color: #41ffff;
-        }
-
-        .message-line.server {
-            color: #00ff41;
-            background: rgba(0, 255, 65, 0.08);
-            border-left-color: #00ff41;
-        }
-
-        .message-line.ai {
-            color: #ff41ff;
-            background: rgba(255, 65, 255, 0.12);
-            border-left-color: #ff41ff;
-        }
-
-        .timestamp {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.8rem;
-            font-size: 10px;
-            color: #666;
-            font-weight: normal;
-        }
-
-        .input-section {
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(15px);
-            padding: 1.5rem;
-            border: 2px solid #00ff41;
-            border-radius: 15px;
-            box-shadow: 0 -5px 25px rgba(0, 255, 65, 0.2);
-        }
-
-        .command-field {
-            width: 100%;
-            padding: 1.2rem;
-            font-size: 16px;
-            background: rgba(0, 0, 0, 0.8);
-            border: 2px solid #00ff41;
-            color: #00ff41;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-
-        .command-field:focus {
-            outline: none;
-            box-shadow: 0 0 30px rgba(0, 255, 65, 0.7);
-            background: rgba(0, 255, 65, 0.12);
-            transform: scale(1.01);
-        }
-
-        .controls-bar {
-            margin-top: 1.2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1.5rem;
-        }
-
-        .statistics {
-            display: flex;
-            gap: 2rem;
-            font-size: 13px;
-            color: #888;
-            font-weight: bold;
-        }
-
-        .stat-block {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        .stat-value {
-            color: #00ff41;
-            font-size: 15px;
-        }
-
-        .ai-section {
-            display: flex;
-            gap: 1.2rem;
-            align-items: center;
-        }
-
-        .ai-indicator {
-            padding: 0.6rem 1.2rem;
-            border-radius: 25px;
-            font-size: 12px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border: 2px solid;
-            transition: all 0.3s ease;
-        }
-
-        .ai-indicator.enabled {
-            background: rgba(0, 255, 65, 0.2);
-            border-color: #00ff41;
-            color: #00ff41;
-            animation: pulseGreen 2s infinite;
-        }
-
-        .ai-indicator.disabled {
-            background: rgba(255, 65, 65, 0.2);
-            border-color: #ff4141;
-            color: #ff4141;
-        }
-
-        .ai-indicator.thinking {
-            background: rgba(255, 255, 65, 0.2);
-            border-color: #ffff41;
-            color: #ffff41;
-            animation: pulseYellow 0.8s infinite;
-        }
-
-        .loading-spinner {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid rgba(0, 255, 65, 0.3);
-            border-radius: 50%;
-            border-top: 2px solid #00ff41;
-            animation: rotate 1s linear infinite;
-            margin-left: 0.6rem;
-        }
-
-        @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .custom-scrollbar {
-            scrollbar-width: thin;
-            scrollbar-color: #00ff41 rgba(0, 0, 0, 0.3);
-        }
-
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 12px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 6px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, #00ff41, #00cc33);
-            border-radius: 6px;
-            border: 1px solid rgba(0, 0, 0, 0.3);
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(180deg, #33ff66, #00ff41);
-        }
-
-        @media (max-width: 768px) {
-            .header {
-                padding: 1rem;
-            }
-            
-            .connection-section {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .input-group {
-                justify-content: space-between;
-            }
-
-            .status-indicator {
-                margin-left: 0;
-                text-align: center;
-            }
-
-            .controls-bar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .statistics {
-                justify-content: center;
-            }
-
-            .ai-section {
-                justify-content: center;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+  <title>MUD Fatal Dimensions</title>
+  <meta name="theme-color" content="#051f1b">
+  <style>
+    html, body {
+      height: 100%;
+    }
+    body {
+      background: linear-gradient(135deg, #051f1b 0%, #0d2e2b 100%);
+      color: #00ff90;
+      font-family: 'Fira Mono', 'Menlo', monospace;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      background: #02130fcb;
+      border-bottom: 1.5px solid #00b46e40;
+      gap: 1rem;
+    }
+    .inputs {
+      display: flex;
+      gap: 0.5rem;
+      flex: 1 1 0;
+      align-items: center;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+    .inputs input {
+      background: #091c17;
+      color: #00ff90;
+      border: 1.5px solid #00b46e80;
+      border-radius: 6px;
+      padding: 0.55em 0.7em;
+      font-size: 1rem;
+      width: 7.5em;
+      max-width: 38vw;
+      font-family: inherit;
+      outline: none;
+      transition: border .2s;
+    }
+    .inputs input:focus {
+      border: 1.5px solid #00ff90;
+      background: #102b22;
+    }
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    button {
+      background: #00b46e;
+      color: #0a1917;
+      border: none;
+      border-radius: 7px;
+      padding: 0.7em 1.1em;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background .18s, color .18s, box-shadow .18s;
+      box-shadow: 0 1px 4px #0005;
+      outline: none;
+      min-width: 95px;
+    }
+    button:active {
+      background: #00ff90;
+      color: #051f1b;
+    }
+    button[disabled] {
+      background: #03372c;
+      color: #77c4a6;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    .terminal {
+      flex: 1 1 0;
+      background: #061d17e6;
+      margin: 0;
+      padding: 0.5rem 0.4rem 0.5rem 0.4rem;
+      overflow-y: auto;
+      overflow-x: hidden;
+      font-size: 15px;
+      border-bottom: 1.5px solid #00b46e40;
+      border-top: 1.5px solid #00b46e40;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 0;
+      max-height: 64vh;
+      line-height: 1.38;
+      letter-spacing: 0.01em;
+      box-shadow: 0 0 6px #00ff9040 inset;
+    }
+    .msg { margin-bottom: 0.4rem; }
+    .msg.system { color: #ffe66b; opacity: .88; }
+    .msg.error { color: #ff3f51; font-weight: bold; }
+    .msg.user { color: #00e6ff; }
+    .msg.ai { color: #be7dff; }
+    .msg.server { color: #00ff90; }
+    .msg.time { font-size: 12px; color: #50b36d; float: right; opacity: 0.7;}
+    .input-bar {
+      display: flex;
+      background: #02130fcb;
+      padding: 0.7rem 1rem 0.7rem 1rem;
+      align-items: center;
+      gap: 0.5rem;
+      border-top: 1.5px solid #00b46e40;
+    }
+    .input-bar input[type="text"] {
+      flex: 1;
+      padding: 0.7em 1em;
+      font-size: 1.04rem;
+      border-radius: 8px;
+      background: #0d2e25;
+      color: #00ff90;
+      border: 1.5px solid #009d5f55;
+      outline: none;
+      font-family: inherit;
+      transition: border .18s;
+    }
+    .input-bar input[type="text"]:focus {
+      border: 1.5px solid #00ff90;
+      background: #122e28;
+    }
+    .hint {
+      font-size: .93em;
+      color: #6dbb99;
+      margin-left: 0.8em;
+      opacity: .72;
+      letter-spacing: 0.02em;
+    }
+    .mobile-hide {
+      display: block;
+    }
+    @media (max-width: 700px) {
+      .inputs input { width: 5.5em; max-width: 25vw; font-size: .98em;}
+      .mobile-hide { display: none; }
+      .terminal { font-size: 14px; max-height: 44vh; }
+    }
+    @media (max-width: 420px) {
+      .topbar { flex-direction: column; align-items: stretch; gap: .2rem;}
+      .inputs { flex-wrap: wrap; flex-direction: column; gap: 0.25rem;}
+      .actions { gap: 0.25rem;}
+      .terminal { font-size: 13px; }
+      .input-bar { padding: 0.7rem 0.6rem;}
+    }
+  </style>
 </head>
 <body>
-    <div class="header">
-        <div class="connection-section">
-            <div class="input-group">
-                <label for="mudHost">Host:</label>
-                <input type="text" id="mudHost" value="mud.fataldimensions.nl" />
-            </div>
-            <div class="input-group">
-                <label for="mudPort">Porta:</label>
-                <input type="number" id="mudPort" value="4000" />
-            </div>
-            <button id="connectButton" onclick="toggleConnection()">
-                Conectar
-                <span id="loadingIcon" class="loading-spinner" style="display: none;"></span>
-            </button>
-            <div id="connectionStatus" class="status-indicator disconnected">Desconectado</div>
-        </div>
-        
-        <div class="api-info">
-            <div>
-                <strong>API:</strong> <span class="api-endpoint" id="apiEndpoint">/api/proxy</span>
-            </div>
-            <div class="api-status">
-                <span class="status-dot testing" id="apiStatusDot"></span>
-                <span id="apiStatusText">Testando...</span>
-            </div>
-        </div>
+  <div class="topbar">
+    <div class="inputs">
+      <input id="host" type="text" value="mud.fataldimensions.nl" autocomplete="off" autocapitalize="off" spellcheck="false" title="Servidor" />
+      <input id="port" type="number" value="4000" min="1" max="65535" autocomplete="off" title="Porta" />
     </div>
-
-    <div class="main-area">
-        <div class="terminal-container custom-scrollbar">
-            <div id="outputArea" class="output-area"></div>
-        </div>
-
-        <div class="input-section">
-            <input 
-                type="text" 
-                id="commandField" 
-                class="command-field" 
-                placeholder="Digite um comando e pressione Enter..."
-                onkeydown="handleKeyInput(event)"
-                disabled
-            />
-            <div class="controls-bar">
-                <div class="statistics">
-                    <div class="stat-block">
-                        <span>Mensagens:</span>
-                        <span id="messageCounter" class="stat-value">0</span>
-                    </div>
-                    <div class="stat-block">
-                        <span>Tempo:</span>
-                        <span id="connectionTimer" class="stat-value">--:--</span>
-                    </div>
-                    <div class="stat-block">
-                        <span>Latência:</span>
-                        <span id="latencyDisplay" class="stat-value">-- ms</span>
-                    </div>
-                </div>
-                <div class="ai-section">
-                    <button id="aiToggleButton" onclick="toggleAI()" disabled>Ativar IA</button>
-                    <span id="aiStatusIndicator" class="ai-indicator disabled">IA Desabilitada</span>
-                </div>
-            </div>
-        </div>
+    <div class="actions">
+      <button id="connectBtn" onclick="mud.toggleConnection()">Conectar</button>
+      <button id="aiBtn" onclick="mud.toggleAI()" disabled>Ativar IA</button>
     </div>
+  </div>
+  <div id="terminal" class="terminal"></div>
+  <form class="input-bar" onsubmit="mud.handleForm(event)">
+    <input id="cmd" type="text" placeholder="Digite comando e ENTER" autocomplete="off" disabled />
+    <span class="hint mobile-hide">ENTER envia, ↑↓ histórico, TAB auto-completa</span>
+  </form>
+  <script>
+    class MUD {
+      constructor() {
+        this.terminal = document.getElementById('terminal');
+        this.cmd = document.getElementById('cmd');
+        this.connectBtn = document.getElementById('connectBtn');
+        this.aiBtn = document.getElementById('aiBtn');
+        this.hostInput = document.getElementById('host');
+        this.portInput = document.getElementById('port');
+        this.api = '/api/proxy';
+        this.connectionId = null;
+        this.isConnected = false;
+        this.isAi = false;
+        this.isAiThinking = false;
+        this.history = [];
+        this.histIdx = -1;
+        this.lastPing = null;
+        this.scroll();
+        this.print('Cliente MUD pronto.', 'system');
+        this.attachEvents();
+      }
 
-    <script>
-        class MudClientApp {
-            constructor() {
-                this.connectionId = null;
-                this.isConnected = false;
-                this.isAiActive = false;
-                this.isAiProcessing = false;
-                this.commandHistory = [];
-                this.historyPosition = -1;
-                this.messageCount = 0;
-                this.connectionStart = null;
-                this.eventStream = null;
-                this.lastPing = null;
-                
-                this.initializeElements();
-                this.loadUserSettings();
-                this.startIntervalTimers();
-                this.testAPIConnection();
-                this.addMessage('Cliente MUD inicializado. Testando API...', 'system');
-            }
+      attachEvents() {
+        this.cmd.addEventListener('keydown', (e) => this.handleKey(e));
+        this.cmd.addEventListener('focus', () => this.scroll());
+        window.addEventListener('resize', () => this.scroll());
+      }
 
-            initializeElements() {
-                this.hostInput = document.getElementById('mudHost');
-                this.portInput = document.getElementById('mudPort');
-                this.connectButton = document.getElementById('connectButton');
-                this.connectionStatus = document.getElementById('connectionStatus');
-                this.outputArea = document.getElementById('outputArea');
-                this.commandField = document.getElementById('commandField');
-                this.aiToggleButton = document.getElementById('aiToggleButton');
-                this.aiStatusIndicator = document.getElementById('aiStatusIndicator');
-                this.messageCounter = document.getElementById('messageCounter');
-                this.connectionTimer = document.getElementById('connectionTimer');
-                this.latencyDisplay = document.getElementById('latencyDisplay');
-                this.loadingIcon = document.getElementById('loadingIcon');
-                this.apiStatusDot = document.getElementById('apiStatusDot');
-                this.apiStatusText = document.getElementById('apiStatusText');
-            }
+      scroll() {
+        setTimeout(() => {
+          this.terminal.scrollTop = this.terminal.scrollHeight + 100;
+        }, 15);
+      }
 
-            async testAPIConnection() {
-                try {
-                    const startTime = performance.now();
-                    const response = await fetch('/api/proxy', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'status' })
-                    });
-                    
-                    const duration = Math.round(performance.now() - startTime);
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        this.apiStatusDot.className = 'status-dot online';
-                        this.apiStatusText.textContent = `Online (${duration}ms)`;
-                        this.addMessage(`API funcionando! Latência: ${duration}ms`, 'system');
-                        this.addMessage('Configure host/porta e clique em Conectar.', 'system');
-                    } else {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-                } catch (error) {
-                    this.apiStatusDot.className = 'status-dot offline';
-                    this.apiStatusText.textContent = `Offline (${error.message})`;
-                    this.addMessage(`Erro na API: ${error.message}`, 'error');
-                    this.addMessage('Verifique se o arquivo api/proxy.js está no Vercel', 'error');
-                }
-            }
-
-            loadUserSettings() {
-                const saved = localStorage.getItem('mudClientPreferences');
-                if (saved) {
-                    try {
-                        const settings = JSON.parse(saved);
-                        this.hostInput.value = settings.host || 'mud.fataldimensions.nl';
-                        this.portInput.value = settings.port || 4000;
-                        this.isAiActive = settings.aiEnabled || false;
-                        this.updateAIInterface();
-                        this.aiToggleButton.textContent = this.isAiActive ? 'Desativar IA' : 'Ativar IA';
-                    } catch (e) {
-                        console.error('Erro ao carregar configurações:', e);
-                    }
-                }
-            }
-
-            saveUserSettings() {
-                const settings = {
-                    host: this.hostInput.value,
-                    port: parseInt(this.portInput.value),
-                    aiEnabled: this.isAiActive
-                };
-                localStorage.setItem('mudClientPreferences', JSON.stringify(settings));
-            }
-
-            startIntervalTimers() {
-                setInterval(() => {
-                    if (this.connectionStart) {
-                        const elapsed = Math.floor((Date.now() - this.connectionStart) / 1000);
-                        const minutes = Math.floor(elapsed / 60);
-                        const seconds = elapsed % 60;
-                        this.connectionTimer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                    }
-                }, 1000);
-            }
-
-            addMessage(content, type = 'server') {
-                const messageElement = document.createElement('div');
-                messageElement.className = `message-line ${type}`;
-                
-                const timestamp = new Date().toLocaleTimeString('pt-BR');
-                const typePrefix = {
-                    'system': '[SISTEMA]',
-                    'error': '[ERRO]',
-                    'user': '[VOCÊ]',
-                    'server': '',
-                    'ai': '[IA]'
-                }[type] || '';
-
-                const timestampElement = document.createElement('span');
-                timestampElement.className = 'timestamp';
-                timestampElement.textContent = timestamp;
-
-                messageElement.innerHTML = `${typePrefix ? `<strong>${typePrefix}</strong> ` : ''}${this.sanitizeHTML(content)}`;
-                messageElement.appendChild(timestampElement);
-                
-                this.outputArea.appendChild(messageElement);
-                this.outputArea.scrollTop = this.outputArea.scrollHeight;
-                
-                this.messageCount++;
-                this.messageCounter.textContent = this.messageCount;
-
-                // Limitar histórico a 300 mensagens
-                const messages = this.outputArea.children;
-                if (messages.length > 300) {
-                    this.outputArea.removeChild(messages[0]);
-                }
-            }
-
-            sanitizeHTML(text) {
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
-            }
-
-            updateConnectionStatus(status, text) {
-                this.connectionStatus.className = `status-indicator ${status}`;
-                this.connectionStatus.textContent = text;
-            }
-
-            updateAIInterface() {
-                if (!this.isAiActive) {
-                    this.aiStatusIndicator.className = 'ai-indicator disabled';
-                    this.aiStatusIndicator.textContent = 'IA Desabilitada';
-                } else if (this.isAiProcessing) {
-                    this.aiStatusIndicator.className = 'ai-indicator thinking';
-                    this.aiStatusIndicator.textContent = 'IA Pensando...';
-                } else {
-                    this.aiStatusIndicator.className = 'ai-indicator enabled';
-                    this.aiStatusIndicator.textContent = 'IA Ativa';
-                }
-            }
-
-            async toggleConnection() {
-                if (this.isConnected) {
-                    this.disconnectFromMUD();
-                    return;
-                }
-
-                const host = this.hostInput.value.trim();
-                const port = parseInt(this.portInput.value);
-
-                if (!host || !port) {
-                    this.addMessage('Host e porta são obrigatórios', 'error');
-                    return;
-                }
-
-                this.saveUserSettings();
-                this.updateConnectionStatus('connecting', 'Conectando...');
-                this.loadingIcon.style.display = 'inline-block';
-                this.connectButton.disabled = true;
-                this.addMessage(`Conectando a ${host}:${port}...`, 'system');
-
-                try {
-                    const response = await fetch('/api/proxy', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            action: 'connect',
-                            host, 
-                            port 
-                        })
-                    });
-
-                    const data = await response.json();
-
-                    if (!data.success) {
-                        throw new Error(data.error || 'Falha na conexão');
-                    }
-
-                    this.connectionId = data.connectionId;
-                    this.initializeEventStream();
-
-                } catch (error) {
-                    this.addMessage(`Erro de conexão: ${error.message}`, 'error');
-                    this.updateConnectionStatus('disconnected', 'Erro');
-                    this.loadingIcon.style.display = 'none';
-                    this.connectButton.disabled = false;
-                }
-            }
-
-            initializeEventStream() {
-                const streamEndpoint = `/api/proxy?action=stream&connectionId=${this.connectionId}`;
-                this.eventStream = new EventSource(streamEndpoint);
-
-                this.eventStream.onopen = () => {
-                    this.isConnected = true;
-                    this.connectionStart = Date.now();
-                    this.updateConnectionStatus('connected', 'Conectado');
-                    this.addMessage('Conectado com sucesso!', 'system');
-                    this.connectButton.textContent = 'Desconectar';
-                    this.connectButton.disabled = false;
-                    this.commandField.disabled = false;
-                    this.aiToggleButton.disabled = false;
-                    this.loadingIcon.style.display = 'none';
-                    this.commandField.focus();
-                };
-
-                this.eventStream.onmessage = (event) => {
-                    try {
-                        const data = JSON.parse(event.data);
-                        
-                        if (data.type === 'mud_output' && data.content) {
-                            this.addMessage(data.content, 'server');
-                            
-                            if (this.isAiActive && !this.isAiProcessing) {
-                                this.processWithAI(data.content);
-                            }
-                        } else if (data.type === 'ping') {
-                            if (this.lastPing) {
-                                const latency = Date.now() - this.lastPing;
-                                this.latencyDisplay.textContent = `${latency} ms`;
-                            }
-                        } else if (data.type === 'error') {
-                            this.addMessage(`Erro: ${data.message}`, 'error');
-                        } else if (data.type === 'disconnect') {
-                            this.addMessage('Conexão encerrada pelo servidor', 'system');
-                            this.disconnectFromMUD();
-                        }
-                    } catch (e) {
-                        console.error('Erro ao processar evento SSE:', e);
-                    }
-                };
-
-                this.eventStream.onerror = () => {
-                    this.addMessage('Erro na conexão com servidor', 'error');
-                    this.disconnectFromMUD();
-                };
-            }
-
-            disconnectFromMUD() {
-                if (this.eventStream) {
-                    this.eventStream.close();
-                    this.eventStream = null;
-                }
-
-                if (this.connectionId) {
-                    fetch('/api/proxy', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            action: 'disconnect',
-                            connectionId: this.connectionId 
-                        })
-                    }).catch(e => console.error('Erro ao desconectar:', e));
-                    
-                    this.connectionId = null;
-                }
-
-                this.isConnected = false;
-                this.connectionStart = null;
-                this.updateConnectionStatus('disconnected', 'Desconectado');
-                this.connectButton.textContent = 'Conectar';
-                this.connectButton.disabled = false;
-                this.commandField.disabled = true;
-                this.aiToggleButton.disabled = true;
-                this.connectionTimer.textContent = '--:--';
-                this.latencyDisplay.textContent = '-- ms';
-                this.loadingIcon.style.display = 'none';
-            }
-
-            async sendCommand(command) {
-                if (!this.isConnected || !this.connectionId) {
-                    this.addMessage('Não conectado', 'error');
-                    return;
-                }
-
-                this.addMessage(command, 'user');
-                this.commandHistory.push(command);
-                this.historyPosition = this.commandHistory.length;
-
-                this.lastPing = Date.now();
-
-                try {
-                    const response = await fetch('/api/proxy', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            action: 'send',
-                            connectionId: this.connectionId,
-                            command 
-                        })
-                    });
-
-                    const data = await response.json();
-                    
-                    if (!data.success) {
-                        this.addMessage(`Erro: ${data.error}`, 'error');
-                    }
-                } catch (error) {
-                    this.addMessage(`Erro ao enviar comando: ${error.message}`, 'error');
-                }
-            }
-
-            toggleAI() {
-                this.isAiActive = !this.isAiActive;
-                this.aiToggleButton.textContent = this.isAiActive ? 'Desativar IA' : 'Ativar IA';
-                this.updateAIInterface();
-                this.saveUserSettings();
-                
-                const status = this.isAiActive ? 'ativada' : 'desativada';
-                this.addMessage(`IA ${status}`, 'system');
-            }
-
-            processWithAI(gameOutput) {
-                if (!this.isAiActive || this.isAiProcessing) return;
-
-                this.isAiProcessing = true;
-                this.updateAIInterface();
-
-                setTimeout(() => {
-                    const output = gameOutput.toLowerCase();
-                    let action = '';
-                    let reasoning = '';
-                    
-                    // IA contextual para MUD
-                    if (output.includes('by what name') || output.includes('nome')) {
-                        action = 'Visitante';
-                        reasoning = 'Detectou prompt de nome - usando "Visitante"';
-                    } else if (output.includes('password') || output.includes('senha')) {
-                        reasoning = 'Detectou prompt de senha - aguardando entrada manual';
-                    } else if (output.includes('hit return') || output.includes('pressione enter')) {
-                        action = '';
-                        reasoning = 'Enviando Enter para continuar';
-                    } else if (output.includes('obvious exits') || output.includes('saídas óbvias')) {
-                        if (output.includes('north')) action = 'north';
-                        else if (output.includes('south')) action = 'south';
-                        else if (output.includes('east')) action = 'east';
-                        else if (output.includes('west')) action = 'west';
-                        else if (output.includes('up')) action = 'up';
-                        else if (output.includes('down')) action = 'down';
-                        else action = 'look';
-                        reasoning = `Analisando saídas disponíveis - escolhendo: ${action}`;
-                    } else if (output.includes('you see') || output.includes('você vê')) {
-                        action = 'look';
-                        reasoning = 'Examinando o ambiente';
-                    } else if (output.includes('inventory') || output.includes('inventário')) {
-                        action = 'score';
-                        reasoning = 'Verificando status do personagem';
-                    } else {
-                        const explorationActions = ['look', 'inventory', 'score', 'who', 'time', 'weather'];
-                        action = explorationActions[Math.floor(Math.random() * explorationActions.length)];
-                        reasoning = `Ação exploratória: ${action}`;
-                    }
-                    
-                    if (action) {
-                        this.addMessage(`${reasoning}`, 'ai');
-                        this.sendCommand(action);
-                    } else if (reasoning) {
-                        this.addMessage(reasoning, 'ai');
-                    }
-                    
-                    this.isAiProcessing = false;
-                    this.updateAIInterface();
-                }, 2500 + Math.random() * 1500); // 2.5-4 segundos
-            }
-
-            handleKeyInput(event) {
-                if (event.key === 'Enter') {
-                    const command = this.commandField.value.trim();
-                    if (command) {
-                        this.sendCommand(command);
-                        this.commandField.value = '';
-                    }
-                } else if (event.key === 'ArrowUp') {
-                    event.preventDefault();
-                    if (this.historyPosition > 0) {
-                        this.historyPosition--;
-                        this.commandField.value = this.commandHistory[this.historyPosition];
-                    }
-                } else if (event.key === 'ArrowDown') {
-                    event.preventDefault();
-                    if (this.historyPosition < this.commandHistory.length - 1) {
-                        this.historyPosition++;
-                        this.commandField.value = this.commandHistory[this.historyPosition];
-                    } else {
-                        this.historyPosition = this.commandHistory.length;
-                        this.commandField.value = '';
-                    }
-                } else if (event.key === 'Tab') {
-                    event.preventDefault();
-                    const current = this.commandField.value.toLowerCase();
-                    const mudCommands = ['look', 'inventory', 'score', 'who', 'north', 'south', 'east', 'west', 'up', 'down', 'help', 'quit', 'say', 'tell'];
-                    const match = mudCommands.find(cmd => cmd.startsWith(current));
-                    if (match) {
-                        this.commandField.value = match;
-                    }
-                }
-            }
+      print(msg, type = 'server') {
+        const div = document.createElement('div');
+        div.className = 'msg ' + type;
+        if (type === 'user' || type === 'ai') {
+          div.textContent = msg;
+        } else {
+          // server/system/error
+          div.innerHTML = msg.replace(/\n/g, '<br>');
         }
+        const t = document.createElement('span');
+        t.className = 'msg time';
+        t.textContent = new Date().toLocaleTimeString('pt-BR').slice(0, 5);
+        div.appendChild(t);
+        this.terminal.appendChild(div);
+        this.scroll();
+      }
 
-        // Instância global da aplicação
-        const mudApp = new MudClientApp();
+      setConnected(yes) {
+        this.isConnected = yes;
+        this.connectBtn.textContent = yes ? 'Desconectar' : 'Conectar';
+        this.connectBtn.disabled = false;
+        this.hostInput.disabled = yes;
+        this.portInput.disabled = yes;
+        this.cmd.disabled = !yes;
+        this.aiBtn.disabled = !yes;
+        if (!yes) this.cmd.value = '';
+        document.getElementById('connectionStatus').className = 'status-indicator ' + (yes ? 'connected' : 'disconnected');
+        document.getElementById('connectionStatus').textContent = yes ? 'Conectado' : 'Desconectado';
+        if (yes) setTimeout(() => this.cmd.focus(), 140);
+      }
 
-        // Funções globais para os elementos HTML
-        function toggleConnection() {
-            mudApp.toggleConnection();
+      setAI(on) {
+        this.isAi = on;
+        this.aiBtn.textContent = on ? 'Desativar IA' : 'Ativar IA';
+        this.aiBtn.className = on ? 'enabled' : '';
+      }
+
+      setAIThinking(thinking) {
+        this.isAiThinking = thinking;
+        this.aiBtn.disabled = thinking;
+        this.aiBtn.textContent = thinking ? 'IA Pensando...' : (this.isAi ? 'Desativar IA' : 'Ativar IA');
+      }
+
+      async toggleConnection() {
+        if (this.isConnected) {
+          this.disconnect();
+        } else {
+          this.connect();
         }
+      }
 
-        function toggleAI() {
-            mudApp.toggleAI();
+      async connect() {
+        const host = this.hostInput.value.trim();
+        const port = +this.portInput.value;
+        this.connectBtn.disabled = true;
+        this.print(`Conectando a ${host}:${port}...`, 'system');
+        try {
+          const r = await fetch(this.api, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'connect', host, port })
+          });
+          const data = await r.json();
+          if (!data.success) throw new Error(data.error || 'Falha na conexão');
+          this.connectionId = data.connectionId;
+          this.listen();
+          this.setConnected(true);
+          this.print('Conectado! Bem-vindo.', 'system');
+        } catch (e) {
+          this.print('Erro ao conectar: ' + e.message, 'error');
+          this.setConnected(false);
         }
+      }
 
-        function handleKeyInput(event) {
-            mudApp.handleKeyInput(event);
+      async disconnect() {
+        if (!this.connectionId) return;
+        fetch(this.api, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'disconnect', connectionId: this.connectionId })
+        }).catch(() => {});
+        this.connectionId = null;
+        this.setConnected(false);
+        this.print('Conexão encerrada.', 'system');
+      }
+
+      async handleForm(e) {
+        e.preventDefault();
+        if (!this.isConnected) return;
+        let cmd = this.cmd.value;
+        // ENTER vazio: envia ENTER para o MUD
+        if (!cmd) {
+          await this.sendCommand('');
+          return;
         }
-    </script>
+        await this.sendCommand(cmd);
+        this.cmd.value = '';
+      }
+
+      async sendCommand(cmd) {
+        if (!this.isConnected || !this.connectionId) return;
+        this.print(cmd || '[ENTER]', 'user');
+        this.history.push(cmd);
+        this.histIdx = this.history.length;
+        await fetch(this.api, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'send', connectionId: this.connectionId, command: cmd })
+        });
+      }
+
+      handleKey(e) {
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          if (this.histIdx > 0) {
+            this.histIdx--;
+            this.cmd.value = this.history[this.histIdx] || '';
+            setTimeout(() => this.cmd.setSelectionRange(99, 99), 0);
+          }
+        } else if (e.key === "ArrowDown") {
+          e.preventDefault();
+          if (this.histIdx < this.history.length - 1) {
+            this.histIdx++;
+            this.cmd.value = this.history[this.histIdx] || '';
+            setTimeout(() => this.cmd.setSelectionRange(99, 99), 0);
+          } else {
+            this.histIdx = this.history.length;
+            this.cmd.value = '';
+          }
+        } else if (e.key === "Tab") {
+          e.preventDefault();
+          const c = this.cmd.value.toLowerCase();
+          const cmds = ['look', 'inventory', 'score', 'who', 'north', 'south', 'east', 'west', 'up', 'down', 'help', 'quit'];
+          const found = cmds.find(cmd => cmd.startsWith(c));
+          if (found) this.cmd.value = found;
+        }
+      }
+
+      toggleAI() {
+        if (!this.isConnected) return;
+        this.setAI(!this.isAi);
+        if (this.isAi) this.print('IA ativada. Ela irá jogar sozinha!', 'system');
+        else this.print('IA desativada.', 'system');
+      }
+
+      listen() {
+        if (!this.connectionId) return;
+        if (this.eventSource) this.eventSource.close();
+        this.eventSource = new EventSource(`${this.api}?action=stream&connectionId=${this.connectionId}`);
+        this.eventSource.onopen = () => {};
+        this.eventSource.onmessage = (ev) => {
+          let data;
+          try { data = JSON.parse(ev.data); } catch { return; }
+          if (data.type === 'mud_output' && data.content) {
+            this.print(data.content, 'server');
+            if (this.isAi && !this.isAiThinking) this.runAI(data.content);
+          } else if (data.type === 'disconnect') {
+            this.print('Conexão encerrada pelo servidor.', 'system');
+            this.setConnected(false);
+          } else if (data.type === 'error') {
+            this.print('Erro: ' + data.message, 'error');
+          }
+        };
+        this.eventSource.onerror = () => {
+          this.print('Erro na conexão com servidor.', 'error');
+          this.setConnected(false);
+        };
+      }
+
+      runAI(output) {
+        this.setAIThinking(true);
+        setTimeout(() => {
+          const lower = (output || '').toLowerCase();
+          let acao = '';
+          if (lower.includes('by what name')) acao = 'Visitante';
+          else if (lower.includes('password')) acao = '';
+          else if (lower.includes('hit return') || lower.includes('pressione enter')) acao = '';
+          else if (lower.includes('north')) acao = 'north';
+          else if (lower.includes('south')) acao = 'south';
+          else if (lower.includes('east')) acao = 'east';
+          else if (lower.includes('west')) acao = 'west';
+          else if (lower.includes('up')) acao = 'up';
+          else if (lower.includes('down')) acao = 'down';
+          else acao = ['look','who','help','inventory','score'][Math.floor(Math.random()*5)];
+          if (acao !== undefined) {
+            this.print('IA: ' + (acao ? `Enviando "${acao}"` : 'Enviando ENTER'), 'ai');
+            this.sendCommand(acao);
+          }
+          this.setAIThinking(false);
+        }, 1200 + Math.random()*700);
+      }
+    }
+    const mud = new MUD();
+    window.mud = mud;
+  </script>
 </body>
 </html>
