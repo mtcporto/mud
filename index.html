@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
   <title>MUD Fatal Dimensions com Gemini IA</title>
-  <meta name="theme-color" content="#051f1b">
   <style>
+    /* ... (igual ao exemplo anterior, mantenha seu CSS preferido aqui) ... */
     body { background: #051f1b; color: #00ff90; font-family: 'Fira Mono', monospace; margin: 0; padding: 0; min-height: 100vh; display: flex; flex-direction: column; }
     .topbar { display: flex; gap: .6em; align-items: center; padding: 0.8em 1em; background: #02130fcb; border-bottom: 1.5px solid #00b46e40; flex-wrap: wrap;}
     .inputs input { background: #091c17; color: #00ff90; border: 1.5px solid #00b46e80; border-radius: 6px; padding: 0.55em 0.7em; font-size: 1rem; width: 7.5em; font-family: inherit; outline: none; }
@@ -276,42 +276,60 @@
       async runGeminiAI(output) {
         this.setAIThinking(true);
         try {
-          // Chave já embutida conforme pedido
           const key = "AIzaSyDRmlTW97Ij9SRu1Q2Vm3ZIqj8h8Yx9Nr8";
-          // Prompt simples: peça para responder com apenas UM comando, apropriado para o contexto
-          const prompt = `Você é um jogador experiente de MUD. O texto do jogo é:
+          // Prompt melhorado!
+          const prompt = `Você é um jogador humano de MUD, respondendo calmamente e uma vez por vez ao que o jogo pede. Sempre leia o texto do MUD e escolha a resposta adequada – nome, raça, classe, sexo, comandos, sim/não, etc. Só envie ENTER se o texto pedir claramente. Para perguntas de múltipla escolha, escolha uma opção válida (não aleatória, use nomes comuns). Não pule etapas. 
+          
+Texto do jogo:
 """
 ${output}
 """
-Responda apenas com o comando que deve ser digitado (apenas uma palavra/comando, sem explicação, sem pontuação, sem texto adicional). Se for para pressionar enter, responda apenas ENTER.`;
 
-          const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + encodeURIComponent(key), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }]
-            })
-          });
-          const j = await res.json();
-          let comando = '';
-          if (j.candidates && j.candidates.length) {
-            comando = (j.candidates[0].content.parts[0].text || '').trim();
-          }
-          if (comando.toLowerCase() === 'enter') comando = '';
-          if (!comando) {
-            this.print('IA: Pressionando ENTER', 'ai');
-            this.addIaLog('[ENTER]');
-          }
-          else {
-            this.print('IA: Enviando "' + comando + '"', 'ai');
-            this.addIaLog(comando);
-          }
-          await this.sendCommand(comando);
+Responda apenas com o comando ou palavra EXATA a ser digitada (apenas UMA linha: só o texto, sem explicação, sem pontuação extra, sem aspas). Se o comando for só pressionar Enter, responda apenas ENTER. 
+Exemplos:
+Pergunta: By what name do you wish to be known?
+Resposta: Visitante
+
+Pergunta: Did I get that right, Visitante [Yes/No]?
+Resposta: Yes
+
+Pergunta: Qual raça deseja? (Human, Elf, Dwarf, Orc)
+Resposta: Human
+
+Pergunta: Pressione enter para continuar
+Resposta: ENTER
+`;
+          // Delay de "leitura humana"
+          const delay = 1200 + Math.random()*1800;
+          setTimeout(async () => {
+            const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + encodeURIComponent(key), {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+              })
+            });
+            const j = await res.json();
+            let comando = '';
+            if (j.candidates && j.candidates.length) {
+              comando = (j.candidates[0].content.parts[0].text || '').trim();
+            }
+            if (comando.toLowerCase() === 'enter') comando = '';
+            if (!comando) {
+              this.print('IA: Pressionando ENTER', 'ai');
+              this.addIaLog('[ENTER]');
+            } else {
+              this.print('IA: Enviando "' + comando + '"', 'ai');
+              this.addIaLog(comando);
+            }
+            await this.sendCommand(comando);
+            this.setAIThinking(false);
+          }, delay);
         } catch (e) {
           this.print('Falha IA Gemini: ' + e.message, 'error');
           this.addIaLog('Falha IA');
+          this.setAIThinking(false);
         }
-        this.setAIThinking(false);
       }
     }
     const mud = new MUD();
