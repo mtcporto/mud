@@ -6,99 +6,43 @@
   <title>MUD Fatal Dimensions</title>
   <meta name="theme-color" content="#051f1b">
   <style>
-    html, body {
-      height: 100%;
-    }
+    html, body { height: 100%; }
     body {
       background: linear-gradient(135deg, #051f1b 0%, #0d2e2b 100%);
       color: #00ff90;
       font-family: 'Fira Mono', 'Menlo', monospace;
-      margin: 0;
-      padding: 0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      height: 100dvh;
+      margin: 0; padding: 0; min-height: 100vh;
+      display: flex; flex-direction: column; height: 100dvh;
     }
     .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.75rem 1rem;
-      background: #02130fcb;
-      border-bottom: 1.5px solid #00b46e40;
-      gap: 1rem;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.75rem 1rem; background: #02130fcb;
+      border-bottom: 1.5px solid #00b46e40; gap: 1rem;
     }
     .inputs {
-      display: flex;
-      gap: 0.5rem;
-      flex: 1 1 0;
-      align-items: center;
-      flex-wrap: wrap;
-      min-width: 0;
+      display: flex; gap: 0.5rem; flex: 1 1 0; align-items: center; flex-wrap: wrap; min-width: 0;
     }
     .inputs input {
-      background: #091c17;
-      color: #00ff90;
-      border: 1.5px solid #00b46e80;
-      border-radius: 6px;
-      padding: 0.55em 0.7em;
-      font-size: 1rem;
-      width: 7.5em;
-      max-width: 38vw;
-      font-family: inherit;
-      outline: none;
-      transition: border .2s;
+      background: #091c17; color: #00ff90; border: 1.5px solid #00b46e80;
+      border-radius: 6px; padding: 0.55em 0.7em; font-size: 1rem;
+      width: 7.5em; max-width: 38vw; font-family: inherit; outline: none; transition: border .2s;
     }
-    .inputs input:focus {
-      border: 1.5px solid #00ff90;
-      background: #102b22;
-    }
-    .actions {
-      display: flex;
-      gap: 0.5rem;
-    }
+    .inputs input:focus { border: 1.5px solid #00ff90; background: #102b22; }
+    .actions { display: flex; gap: 0.5rem; }
     button {
-      background: #00b46e;
-      color: #0a1917;
-      border: none;
-      border-radius: 7px;
-      padding: 0.7em 1.1em;
-      font-size: 1rem;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background .18s, color .18s, box-shadow .18s;
-      box-shadow: 0 1px 4px #0005;
-      outline: none;
-      min-width: 95px;
+      background: #00b46e; color: #0a1917; border: none; border-radius: 7px;
+      padding: 0.7em 1.1em; font-size: 1rem; font-weight: bold; cursor: pointer;
+      transition: background .18s, color .18s, box-shadow .18s; box-shadow: 0 1px 4px #0005;
+      outline: none; min-width: 95px;
     }
-    button:active {
-      background: #00ff90;
-      color: #051f1b;
-    }
-    button[disabled] {
-      background: #03372c;
-      color: #77c4a6;
-      cursor: not-allowed;
-      opacity: 0.7;
-    }
+    button:active { background: #00ff90; color: #051f1b; }
+    button[disabled] { background: #03372c; color: #77c4a6; cursor: not-allowed; opacity: 0.7; }
     .terminal {
-      flex: 1 1 0;
-      background: #061d17e6;
-      margin: 0;
-      padding: 0.5rem 0.4rem 0.5rem 0.4rem;
-      overflow-y: auto;
-      overflow-x: hidden;
-      font-size: 15px;
-      border-bottom: 1.5px solid #00b46e40;
-      border-top: 1.5px solid #00b46e40;
-      white-space: pre-wrap;
-      word-break: break-word;
-      min-height: 0;
-      max-height: 64vh;
-      line-height: 1.38;
-      letter-spacing: 0.01em;
-      box-shadow: 0 0 6px #00ff9040 inset;
+      flex: 1 1 0; background: #061d17e6; margin: 0; padding: 0.5rem 0.4rem 0.5rem 0.4rem;
+      overflow-y: auto; overflow-x: hidden; font-size: 15px;
+      border-bottom: 1.5px solid #00b46e40; border-top: 1.5px solid #00b46e40;
+      white-space: pre-wrap; word-break: break-word; min-height: 0; max-height: 64vh;
+      line-height: 1.38; letter-spacing: 0.01em; box-shadow: 0 0 6px #00ff9040 inset;
     }
     .msg { margin-bottom: 0.4rem; }
     .msg.system { color: #ffe66b; opacity: .88; }
@@ -108,39 +52,17 @@
     .msg.server { color: #00ff90; }
     .msg.time { font-size: 12px; color: #50b36d; float: right; opacity: 0.7;}
     .input-bar {
-      display: flex;
-      background: #02130fcb;
-      padding: 0.7rem 1rem 0.7rem 1rem;
-      align-items: center;
-      gap: 0.5rem;
-      border-top: 1.5px solid #00b46e40;
+      display: flex; background: #02130fcb; padding: 0.7rem 1rem 0.7rem 1rem;
+      align-items: center; gap: 0.5rem; border-top: 1.5px solid #00b46e40;
     }
     .input-bar input[type="text"] {
-      flex: 1;
-      padding: 0.7em 1em;
-      font-size: 1.04rem;
-      border-radius: 8px;
-      background: #0d2e25;
-      color: #00ff90;
-      border: 1.5px solid #009d5f55;
-      outline: none;
-      font-family: inherit;
-      transition: border .18s;
+      flex: 1; padding: 0.7em 1em; font-size: 1.04rem; border-radius: 8px;
+      background: #0d2e25; color: #00ff90; border: 1.5px solid #009d5f55;
+      outline: none; font-family: inherit; transition: border .18s;
     }
-    .input-bar input[type="text"]:focus {
-      border: 1.5px solid #00ff90;
-      background: #122e28;
-    }
-    .hint {
-      font-size: .93em;
-      color: #6dbb99;
-      margin-left: 0.8em;
-      opacity: .72;
-      letter-spacing: 0.02em;
-    }
-    .mobile-hide {
-      display: block;
-    }
+    .input-bar input[type="text"]:focus { border: 1.5px solid #00ff90; background: #122e28; }
+    .hint { font-size: .93em; color: #6dbb99; margin-left: 0.8em; opacity: .72; letter-spacing: 0.02em; }
+    .mobile-hide { display: block; }
     @media (max-width: 700px) {
       .inputs input { width: 5.5em; max-width: 25vw; font-size: .98em;}
       .mobile-hide { display: none; }
@@ -187,7 +109,7 @@
         this.isAiThinking = false;
         this.history = [];
         this.histIdx = -1;
-        this.lastPing = null;
+        this.eventSource = null;
         this.scroll();
         this.print('Cliente MUD pronto.', 'system');
         this.attachEvents();
@@ -211,7 +133,6 @@
         if (type === 'user' || type === 'ai') {
           div.textContent = msg;
         } else {
-          // server/system/error
           div.innerHTML = msg.replace(/\n/g, '<br>');
         }
         const t = document.createElement('span');
@@ -231,8 +152,6 @@
         this.cmd.disabled = !yes;
         this.aiBtn.disabled = !yes;
         if (!yes) this.cmd.value = '';
-        document.getElementById('connectionStatus').className = 'status-indicator ' + (yes ? 'connected' : 'disconnected');
-        document.getElementById('connectionStatus').textContent = yes ? 'Conectado' : 'Desconectado';
         if (yes) setTimeout(() => this.cmd.focus(), 140);
       }
 
@@ -295,7 +214,6 @@
         e.preventDefault();
         if (!this.isConnected) return;
         let cmd = this.cmd.value;
-        // ENTER vazio: envia ENTER para o MUD
         if (!cmd) {
           await this.sendCommand('');
           return;
