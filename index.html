@@ -3,47 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-  <title>MUD Fatal Dimensions</title>
+  <title>MUD Fatal Dimensions com Gemini IA</title>
   <meta name="theme-color" content="#051f1b">
   <style>
-    html, body { height: 100%; }
-    body {
-      background: linear-gradient(135deg, #051f1b 0%, #0d2e2b 100%);
-      color: #00ff90;
-      font-family: 'Fira Mono', 'Menlo', monospace;
-      margin: 0; padding: 0; min-height: 100vh;
-      display: flex; flex-direction: column; height: 100dvh;
-    }
-    .topbar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0.75rem 1rem; background: #02130fcb;
-      border-bottom: 1.5px solid #00b46e40; gap: 1rem;
-    }
-    .inputs {
-      display: flex; gap: 0.5rem; flex: 1 1 0; align-items: center; flex-wrap: wrap; min-width: 0;
-    }
-    .inputs input {
-      background: #091c17; color: #00ff90; border: 1.5px solid #00b46e80;
-      border-radius: 6px; padding: 0.55em 0.7em; font-size: 1rem;
-      width: 7.5em; max-width: 38vw; font-family: inherit; outline: none; transition: border .2s;
-    }
+    body { background: #051f1b; color: #00ff90; font-family: 'Fira Mono', monospace; margin: 0; padding: 0; min-height: 100vh; display: flex; flex-direction: column; }
+    .topbar { display: flex; gap: .6em; align-items: center; padding: 0.8em 1em; background: #02130fcb; border-bottom: 1.5px solid #00b46e40; flex-wrap: wrap;}
+    .inputs input { background: #091c17; color: #00ff90; border: 1.5px solid #00b46e80; border-radius: 6px; padding: 0.55em 0.7em; font-size: 1rem; width: 7.5em; font-family: inherit; outline: none; }
     .inputs input:focus { border: 1.5px solid #00ff90; background: #102b22; }
     .actions { display: flex; gap: 0.5rem; }
-    button {
-      background: #00b46e; color: #0a1917; border: none; border-radius: 7px;
-      padding: 0.7em 1.1em; font-size: 1rem; font-weight: bold; cursor: pointer;
-      transition: background .18s, color .18s, box-shadow .18s; box-shadow: 0 1px 4px #0005;
-      outline: none; min-width: 95px;
-    }
-    button:active { background: #00ff90; color: #051f1b; }
-    button[disabled] { background: #03372c; color: #77c4a6; cursor: not-allowed; opacity: 0.7; }
-    .terminal {
-      flex: 1 1 0; background: #061d17e6; margin: 0; padding: 0.5rem 0.4rem 0.5rem 0.4rem;
-      overflow-y: auto; overflow-x: hidden; font-size: 15px;
-      border-bottom: 1.5px solid #00b46e40; border-top: 1.5px solid #00b46e40;
-      white-space: pre-wrap; word-break: break-word; min-height: 0; max-height: 64vh;
-      line-height: 1.38; letter-spacing: 0.01em; box-shadow: 0 0 6px #00ff9040 inset;
-    }
+    button { background: #00b46e; color: #0a1917; border: none; border-radius: 7px; padding: 0.7em 1.1em; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background .18s; min-width: 95px;}
+    button:active { background: #00ff90; color: #051f1b;}
+    button[disabled] {background: #03372c; color: #77c4a6; cursor: not-allowed; opacity: 0.7;}
+    .terminal { flex: 1 1 0; background: #061d17e6; margin: 0; padding: 0.5rem 0.4rem; overflow-y: auto; font-size: 15px; border-bottom: 1.5px solid #00b46e40; border-top: 1.5px solid #00b46e40; white-space: pre-wrap; min-height: 0; max-height: 64vh; }
     .msg { margin-bottom: 0.4rem; }
     .msg.system { color: #ffe66b; opacity: .88; }
     .msg.error { color: #ff3f51; font-weight: bold; }
@@ -51,26 +22,21 @@
     .msg.ai { color: #be7dff; }
     .msg.server { color: #00ff90; }
     .msg.time { font-size: 12px; color: #50b36d; float: right; opacity: 0.7;}
-    .input-bar {
-      display: flex; background: #02130fcb; padding: 0.7rem 1rem 0.7rem 1rem;
-      align-items: center; gap: 0.5rem; border-top: 1.5px solid #00b46e40;
-    }
-    .input-bar input[type="text"] {
-      flex: 1; padding: 0.7em 1em; font-size: 1.04rem; border-radius: 8px;
-      background: #0d2e25; color: #00ff90; border: 1.5px solid #009d5f55;
-      outline: none; font-family: inherit; transition: border .18s;
-    }
+    .input-bar { display: flex; background: #02130fcb; padding: 0.7rem 1rem; align-items: center; gap: 0.5rem; border-top: 1.5px solid #00b46e40;}
+    .input-bar input[type="text"] { flex: 1; padding: 0.7em 1em; font-size: 1.04rem; border-radius: 8px; background: #0d2e25; color: #00ff90; border: 1.5px solid #009d5f55; outline: none; font-family: inherit;}
     .input-bar input[type="text"]:focus { border: 1.5px solid #00ff90; background: #122e28; }
     .hint { font-size: .93em; color: #6dbb99; margin-left: 0.8em; opacity: .72; letter-spacing: 0.02em; }
-    .mobile-hide { display: block; }
+    .ia-log-bar { background: #0a221b; border-top: 1.5px solid #007a4a40; font-size: 12px; font-family: inherit; color: #9cffdc; padding: 0.6em 1.1em; min-height: 2.2em; }
+    .ia-log-bar strong { color: #00ff90; margin-right: 0.6em; }
+    .ia-log-action { margin-right: 1.2em; color: #be7dff; font-weight: bold; font-family: inherit;}
     @media (max-width: 700px) {
-      .inputs input { width: 5.5em; max-width: 25vw; font-size: .98em;}
-      .mobile-hide { display: none; }
+      .inputs input { width: 5.5em; font-size: .98em;}
       .terminal { font-size: 14px; max-height: 44vh; }
+      .ia-log-bar { font-size: 11px; padding: 0.6em 0.5em;}
     }
     @media (max-width: 420px) {
-      .topbar { flex-direction: column; align-items: stretch; gap: .2rem;}
-      .inputs { flex-wrap: wrap; flex-direction: column; gap: 0.25rem;}
+      .topbar { flex-direction: column; gap: .2rem;}
+      .inputs { flex-direction: column; gap: 0.25rem;}
       .actions { gap: 0.25rem;}
       .terminal { font-size: 13px; }
       .input-bar { padding: 0.7rem 0.6rem;}
@@ -80,19 +46,20 @@
 <body>
   <div class="topbar">
     <div class="inputs">
-      <input id="host" type="text" value="mud.fataldimensions.nl" autocomplete="off" autocapitalize="off" spellcheck="false" title="Servidor" />
-      <input id="port" type="number" value="4000" min="1" max="65535" autocomplete="off" title="Porta" />
+      <input id="host" type="text" value="mud.fataldimensions.nl" autocomplete="off" spellcheck="false" title="Servidor" />
+      <input id="port" type="number" value="4000" min="1" max="65535" title="Porta" />
     </div>
     <div class="actions">
       <button id="connectBtn" onclick="mud.toggleConnection()">Conectar</button>
-      <button id="aiBtn" onclick="mud.toggleAI()" disabled>Ativar IA</button>
+      <button id="aiBtn" onclick="mud.toggleAI()" disabled>Ativar IA Gemini</button>
     </div>
   </div>
   <div id="terminal" class="terminal"></div>
   <form class="input-bar" onsubmit="mud.handleForm(event)">
     <input id="cmd" type="text" placeholder="Digite comando e ENTER" autocomplete="off" disabled />
-    <span class="hint mobile-hide">ENTER envia, ↑↓ histórico, TAB auto-completa</span>
+    <span class="hint">ENTER envia, ↑↓ histórico, TAB auto-completa</span>
   </form>
+  <div class="ia-log-bar" id="iaLogBar"><strong>Log IA:</strong> Nenhuma ação ainda.</div>
   <script>
     class MUD {
       constructor() {
@@ -109,10 +76,12 @@
         this.isAiThinking = false;
         this.history = [];
         this.histIdx = -1;
-        this.eventSource = null;
+        this.iaLog = [];
+        this.maxIaLog = 12;
         this.scroll();
         this.print('Cliente MUD pronto.', 'system');
         this.attachEvents();
+        this.updateIaLog();
       }
 
       attachEvents() {
@@ -130,11 +99,7 @@
       print(msg, type = 'server') {
         const div = document.createElement('div');
         div.className = 'msg ' + type;
-        if (type === 'user' || type === 'ai') {
-          div.textContent = msg;
-        } else {
-          div.innerHTML = msg.replace(/\n/g, '<br>');
-        }
+        div.innerHTML = (type === 'user' || type === 'ai') ? msg : msg.replace(/\n/g, '<br>');
         const t = document.createElement('span');
         t.className = 'msg time';
         t.textContent = new Date().toLocaleTimeString('pt-BR').slice(0, 5);
@@ -152,27 +117,24 @@
         this.cmd.disabled = !yes;
         this.aiBtn.disabled = !yes;
         if (!yes) this.cmd.value = '';
-        if (yes) setTimeout(() => this.cmd.focus(), 140);
+        if (yes) setTimeout(() => this.cmd.focus(), 120);
       }
 
       setAI(on) {
         this.isAi = on;
-        this.aiBtn.textContent = on ? 'Desativar IA' : 'Ativar IA';
+        this.aiBtn.textContent = on ? 'Desativar IA Gemini' : 'Ativar IA Gemini';
         this.aiBtn.className = on ? 'enabled' : '';
       }
 
       setAIThinking(thinking) {
         this.isAiThinking = thinking;
         this.aiBtn.disabled = thinking;
-        this.aiBtn.textContent = thinking ? 'IA Pensando...' : (this.isAi ? 'Desativar IA' : 'Ativar IA');
+        this.aiBtn.textContent = thinking ? 'IA Pensando...' : (this.isAi ? 'Desativar IA Gemini' : 'Ativar IA Gemini');
       }
 
       async toggleConnection() {
-        if (this.isConnected) {
-          this.disconnect();
-        } else {
-          this.connect();
-        }
+        if (this.isConnected) this.disconnect();
+        else this.connect();
       }
 
       async connect() {
@@ -199,6 +161,7 @@
       }
 
       async disconnect() {
+        if (this.listenAbort) this.listenAbort.abort();
         if (!this.connectionId) return;
         fetch(this.api, {
           method: 'POST',
@@ -214,6 +177,7 @@
         e.preventDefault();
         if (!this.isConnected) return;
         let cmd = this.cmd.value;
+        // ENTER vazio: envia ENTER para o MUD
         if (!cmd) {
           await this.sendCommand('');
           return;
@@ -264,13 +228,14 @@
       toggleAI() {
         if (!this.isConnected) return;
         this.setAI(!this.isAi);
-        if (this.isAi) this.print('IA ativada. Ela irá jogar sozinha!', 'system');
+        if (this.isAi) this.print('IA Gemini ativada. Ela irá jogar sozinha!', 'system');
         else this.print('IA desativada.', 'system');
       }
 
       listen() {
         if (!this.connectionId) return;
         if (this.eventSource) this.eventSource.close();
+        this.listenAbort = new AbortController();
         this.eventSource = new EventSource(`${this.api}?action=stream&connectionId=${this.connectionId}`);
         this.eventSource.onopen = () => {};
         this.eventSource.onmessage = (ev) => {
@@ -278,7 +243,7 @@
           try { data = JSON.parse(ev.data); } catch { return; }
           if (data.type === 'mud_output' && data.content) {
             this.print(data.content, 'server');
-            if (this.isAi && !this.isAiThinking) this.runAI(data.content);
+            if (this.isAi && !this.isAiThinking) this.runGeminiAI(data.content);
           } else if (data.type === 'disconnect') {
             this.print('Conexão encerrada pelo servidor.', 'system');
             this.setConnected(false);
@@ -292,27 +257,61 @@
         };
       }
 
-      runAI(output) {
+      updateIaLog() {
+        const logBar = document.getElementById("iaLogBar");
+        if (!this.iaLog.length) {
+          logBar.innerHTML = `<strong>Log IA:</strong> Nenhuma ação ainda.`;
+        } else {
+          logBar.innerHTML = `<strong>Log IA:</strong> ` +
+            this.iaLog.slice(-this.maxIaLog).map(a => `<span class="ia-log-action">${a}</span>`).join("");
+        }
+      }
+
+      addIaLog(action) {
+        this.iaLog.push(action);
+        if (this.iaLog.length > this.maxIaLog*2) this.iaLog = this.iaLog.slice(-this.maxIaLog*2);
+        this.updateIaLog();
+      }
+
+      async runGeminiAI(output) {
         this.setAIThinking(true);
-        setTimeout(() => {
-          const lower = (output || '').toLowerCase();
-          let acao = '';
-          if (lower.includes('by what name')) acao = 'Visitante';
-          else if (lower.includes('password')) acao = '';
-          else if (lower.includes('hit return') || lower.includes('pressione enter')) acao = '';
-          else if (lower.includes('north')) acao = 'north';
-          else if (lower.includes('south')) acao = 'south';
-          else if (lower.includes('east')) acao = 'east';
-          else if (lower.includes('west')) acao = 'west';
-          else if (lower.includes('up')) acao = 'up';
-          else if (lower.includes('down')) acao = 'down';
-          else acao = ['look','who','help','inventory','score'][Math.floor(Math.random()*5)];
-          if (acao !== undefined) {
-            this.print('IA: ' + (acao ? `Enviando "${acao}"` : 'Enviando ENTER'), 'ai');
-            this.sendCommand(acao);
+        try {
+          // Chave já embutida conforme pedido
+          const key = "AIzaSyDRmlTW97Ij9SRu1Q2Vm3ZIqj8h8Yx9Nr8";
+          // Prompt simples: peça para responder com apenas UM comando, apropriado para o contexto
+          const prompt = `Você é um jogador experiente de MUD. O texto do jogo é:
+"""
+${output}
+"""
+Responda apenas com o comando que deve ser digitado (apenas uma palavra/comando, sem explicação, sem pontuação, sem texto adicional). Se for para pressionar enter, responda apenas ENTER.`;
+
+          const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + encodeURIComponent(key), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }]
+            })
+          });
+          const j = await res.json();
+          let comando = '';
+          if (j.candidates && j.candidates.length) {
+            comando = (j.candidates[0].content.parts[0].text || '').trim();
           }
-          this.setAIThinking(false);
-        }, 1200 + Math.random()*700);
+          if (comando.toLowerCase() === 'enter') comando = '';
+          if (!comando) {
+            this.print('IA: Pressionando ENTER', 'ai');
+            this.addIaLog('[ENTER]');
+          }
+          else {
+            this.print('IA: Enviando "' + comando + '"', 'ai');
+            this.addIaLog(comando);
+          }
+          await this.sendCommand(comando);
+        } catch (e) {
+          this.print('Falha IA Gemini: ' + e.message, 'error');
+          this.addIaLog('Falha IA');
+        }
+        this.setAIThinking(false);
       }
     }
     const mud = new MUD();
