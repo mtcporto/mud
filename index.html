@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
   <title>MUD Fatal Dimensions com Gemini IA</title>
+  <meta name="theme-color" content="#051f1b">
   <style>
-    /* ... (igual ao exemplo anterior, mantenha seu CSS preferido aqui) ... */
     body { background: #051f1b; color: #00ff90; font-family: 'Fira Mono', monospace; margin: 0; padding: 0; min-height: 100vh; display: flex; flex-direction: column; }
     .topbar { display: flex; gap: .6em; align-items: center; padding: 0.8em 1em; background: #02130fcb; border-bottom: 1.5px solid #00b46e40; flex-wrap: wrap;}
     .inputs input { background: #091c17; color: #00ff90; border: 1.5px solid #00b46e80; border-radius: 6px; padding: 0.55em 0.7em; font-size: 1rem; width: 7.5em; font-family: inherit; outline: none; }
@@ -277,29 +277,28 @@
         this.setAIThinking(true);
         try {
           const key = "AIzaSyDRmlTW97Ij9SRu1Q2Vm3ZIqj8h8Yx9Nr8";
-          // Prompt melhorado!
-          const prompt = `Você é um jogador humano de MUD, respondendo calmamente e uma vez por vez ao que o jogo pede. Sempre leia o texto do MUD e escolha a resposta adequada – nome, raça, classe, sexo, comandos, sim/não, etc. Só envie ENTER se o texto pedir claramente. Para perguntas de múltipla escolha, escolha uma opção válida (não aleatória, use nomes comuns). Não pule etapas. 
-          
+          // Prompt aprimorado para contexto real de MUD/chat
+          const prompt = `Você está jogando um MUD (um RPG de texto clássico, tipo telnet). 
+O texto abaixo é o que o "mestre do jogo" está dizendo para você (o humano do outro lado). 
+Você só pode responder UMA coisa por vez, como se fosse um chat.
+Sempre responda exatamente o que o mestre do jogo pedir, de acordo com as regras do MUD.
+
+- Se pedir o nome do personagem, use: gemini
+- Se pedir senha, use: @Fatal#123 (ou tente variações parecidas se não aceitar)
+- Se pedir e-mail, use: devosw2p@gmail.com
+- Se pedir para confirmar algo (Yes/No), responda Yes ou No conforme apropriado
+- Se pedir uma opção (classe, raça, sexo), escolha uma opção comum e válida, como um jogador experiente.
+- Só envie ENTER (resposta em branco) se pedir explicitamente.
+- Não pule etapas.
+- Não explique nada, apenas envie o comando/resposta que seria digitado no MUD.
+- O contexto é RPG, então aja como um jogador de MUD.
+
 Texto do jogo:
 """
 ${output}
 """
+Responda apenas com o comando ou palavra EXATA a ser digitada (apenas UMA linha, sem explicação, sem aspas, sem pontuação extra).`;
 
-Responda apenas com o comando ou palavra EXATA a ser digitada (apenas UMA linha: só o texto, sem explicação, sem pontuação extra, sem aspas). Se o comando for só pressionar Enter, responda apenas ENTER. 
-Exemplos:
-Pergunta: By what name do you wish to be known?
-Resposta: Visitante
-
-Pergunta: Did I get that right, Visitante [Yes/No]?
-Resposta: Yes
-
-Pergunta: Qual raça deseja? (Human, Elf, Dwarf, Orc)
-Resposta: Human
-
-Pergunta: Pressione enter para continuar
-Resposta: ENTER
-`;
-          // Delay de "leitura humana"
           const delay = 1200 + Math.random()*1800;
           setTimeout(async () => {
             const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + encodeURIComponent(key), {
