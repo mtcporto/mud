@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cliente MUD - Fatal Dimensions</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #00ff41;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            border-bottom: 2px solid #00ff41;
+            box-shadow: 0 4px 20px rgba(0, 255, 65, 0.2);
+        }
+
+        .connection-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        label {
+            color: #00ff41;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+            min-width: 60px;
+        }
+
+        input, button {
+            padding: 0.75rem;
+            border: 2px solid #00ff41;
+            background: rgba(0, 0, 0, 0.7);
+            color: #00ff41;
+            font-family: inherit;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.6);
+            background: rgba(0, 255, 65, 0.1);
+        }
+
+        button {
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            min-width: 120px;
+        }
+
+        button:hover:not(:disabled) {
+            background: #00ff41;
+            color: #000;
+            box-shadow: 0 0 25px rgba(0, 255, 65, 0.8);
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            margin-left: auto;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 2px solid;
+            animation: statusPulse 2s infinite;
+        }
+
+        .status.connected {
+            background: rgba(0, 255, 65, 0.2);
+            border-color: #00ff41;
+            color: #00ff41;
+        }
+
+        .status.disconnected {
+            background: rgba(255, 65, 65, 0.2);
+            border-color: #ff4141;
+            color: #ff4141;
+            animation: none;
+        }
+
+        .status.connecting {
+            background: rgba(255, 255, 65, 0.2);
+            border-color: #ffff41;
+            color: #ffff41;
+            animation: connectingPulse 1s infinite;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { box-shadow: 0 0 5px rgba(0, 255, 65, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(0, 255, 65, 0.6); }
+        }
+
+        @keyframes connectingPulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        .output-container {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ff41;
+            border-radius: 12px;
+            overflow-y: auto;
+            padding: 1rem;
+            box-shadow: inset 0 0 30px rgba(0, 255, 65, 0.1);
+            position: relative;
+        }
+
+        .mud-output {
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .message {
+            margin-bottom: 0.8rem;
+            padding: 0.6rem;
+            border-radius: 8px;
+            border-left: 4px solid;
+            backdrop-filter: blur(5px);
+            animation: messageSlide 0.3s ease-out;
+        }
+
+        @keyframes messageSlide {
+            from { 
+                opacity: 0; 
+                transform: translateX(-20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0); 
+            }
+        }
+
+        .message.system {
+            color: #ffff41;
+            background: rgba(255, 255, 65, 0.1);
+            border-left-color: #ffff41;
+        }
+
+        .message.error {
+            color: #ff4141;
+            background: rgba(255, 65, 65, 0.15);
+            border-left-color: #ff4141;
+            font-weight: bold;
+        }
+
+        .message.user {
+            color: #41ffff;
+            background: rgba(65, 255, 255, 0.1);
+            border-left-color: #41ffff;
+        }
+
+        .message.server {
+            color: #00ff41;
+            background: rgba(0, 255, 65, 0.08);
+            border-left-color: #00ff41;
+        }
+
+        .message.ai {
+            color: #ff41ff;
+            background: rgba(255, 65, 255, 0.1);
+            border-left-color: #ff41ff;
+        }
+
+        .input-container {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            border: 2px solid #00ff41;
+            border-radius: 12px;
+            box-shadow: 0 -4px 20px rgba(0, 255, 65, 0.2);
+        }
+
+        .command-input {
+            width: 100%;
+            padding: 1rem;
+            font-size: 16px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #00ff41;
+            color: #00ff41;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .command-input:focus {
+            outline: none;
+            box-shadow: 0 0 25px rgba(0, 255, 65, 0.6);
+            background: rgba(0, 255, 65, 0.1);
+            transform: scale(1.02);
+        }
+
+        .controls-row {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .ai-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .ai-status {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 2px solid;
+            transition: all 0.3s ease;
+        }
+
+        .ai-status.enabled {
+            background: rgba(0, 255, 65, 0.2);
+            border-color: #00ff41;
+            color: #00ff41;
+            animation: statusPulse 2s infinite;
+        }
+
+        .ai-status.disabled {
+            background: rgba(255, 65, 65, 0.2);
+            border-color: #ff4141;
+            color: #ff4141;
+        }
+
+        .ai-status.thinking {
+            background: rgba(255, 255, 65, 0.2);
+            border-color: #ffff41;
+            color: #ffff41;
+            animation: connectingPulse 0.8s infinite;
+        }
+
+        .stats {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 12px;
+            color: #888;
+            font-weight: bold;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .stat-value {
+            color: #00ff41;
+            font-size: 14px;
+        }
+
+        .scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: #00ff41 rgba(0, 0, 0, 0.3);
+        }
+
+        .scrollbar::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+        }
+
+        .scrollbar::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #00ff41, #00cc33);
+            border-radius: 5px;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+        }
+
+        .scrollbar::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #33ff66, #00ff41);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(0, 255, 65, 0.3);
+            border-radius: 50%;
+            border-top: 2px solid #00ff41;
+            animation: spin 1s linear infinite;
+            margin-left: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .proxy-info {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(0, 255, 65, 0.05);
+            border: 1px solid rgba(0, 255, 65, 0.2);
+            border-radius: 5px;
+            font-size: 11px;
+            color: #888;
+        }
+
+        @media (max-width: 768px) {
+            .connection-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .input-group {
+                justify-content: space-between;
+            }
+
+            .status {
+                margin-left: 0;
+                text-align: center;
+            }
+
+            .controls-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .ai-controls {
+                justify-content: center;
+            }
+
+            .stats {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="connection-controls">
+            <div class="input-group">
+                <label for="host">Host:</label>
+                <input type="text" id="host" value="mud.fataldimensions.nl" />
+            </div>
+            <div class="input-group">
+                <label for="porta">Porta:</label>
+                <input type="number" id="porta" value="4000" />
+            </div>
+            <button id="connectBtn" onclick="toggleConnection()">
+                Conectar
+                <span id="loadingSpinner" class="loading" style="display: none;"></span>
+            </button>
+            <div id="status" class="status disconnected">Desconectado</div>
+        </div>
+        <div class="proxy-info">
+            <strong>Proxy WebSocket:</strong> <span id="proxyUrl">wss://mudproxy-gateway.herokuapp.com</span>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="output-container scrollbar">
+            <div id="output" class="mud-output"></div>
+        </div>
+
+        <div class="input-container">
+            <input 
+                type="text" 
+                id="commandInput" 
+                class="command-input" 
+                placeholder="Digite um comando e pressione Enter..."
+                onkeydown="handleKeyPress(event)"
+                disabled
+            />
+            <div class="controls-row">
+                <div class="stats">
+                    <div class="stat-item">
+                        <span>Mensagens:</span>
+                        <span id="messageCount" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Tempo:</span>
+                        <span id="connectionTime" class="stat-value">--:--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Status:</span>
+                        <span id="connectionStatus" class="stat-value">Inativo</span>
+                    </div>
+                </div>
+                <div class="ai-controls">
+                    <button id="aiToggle" onclick="toggleAI()" disabled>Ativar IA</button>
+                    <span id="aiStatus" class="ai-status disabled">IA Desabilitada</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class MudClient {
+            constructor() {
+                this.ws = null;
+                this.isConnected = false;
+                this.isAiEnabled = false;
+                this.isAiThinking = false;
+                this.commandHistory = [];
+                this.historyIndex = -1;
+                this.messageCount = 0;
+                this.connectionStartTime = null;
+                this.reconnectAttempts = 0;
+                this.maxReconnectAttempts = 3;
+                
+                // Proxies WebSocket para Telnet disponíveis
+                this.proxyUrls = [
+                    'wss://mudproxy-gateway.herokuapp.com',
+                    'wss://telnet-ws-proxy.glitch.me',
+                    'wss://ws-telnet-bridge.onrender.com'
+                ];
+                this.currentProxyIndex = 0;
+                
+                this.initializeElements();
+                this.loadSettings();
+                this.startTimers();
+                this.addMessage('Cliente MUD inicializado. Configure host/porta e clique em Conectar.', 'system');
+                this.addMessage('⚠️ Este cliente usa proxies públicos WebSocket para conectar via Telnet.', 'system');
+            }
+
+            initializeElements() {
+                this.hostInput = document.getElementById('host');
+                this.portaInput = document.getElementById('porta');
+                this.connectBtn = document.getElementById('connectBtn');
+                this.statusDiv = document.getElementById('status');
+                this.outputDiv = document.getElementById('output');
+                this.commandInput = document.getElementById('commandInput');
+                this.aiToggle = document.getElementById('aiToggle');
+                this.aiStatus = document.getElementById('aiStatus');
+                this.messageCountSpan = document.getElementById('messageCount');
+                this.connectionTimeSpan = document.getElementById('connectionTime');
+                this.connectionStatusSpan = document.getElementById('connectionStatus');
+                this.loadingSpinner = document.getElementById('loadingSpinner');
+                this.proxyUrlSpan = document.getElementById('proxyUrl');
+            }
+
+            loadSettings() {
+                const saved = localStorage.getItem('mudClientSettings');
+                if (saved) {
+                    try {
+                        const settings = JSON.parse(saved);
+                        this.hostInput.value = settings.host || 'mud.fataldimensions.nl';
+                        this.portaInput.value = settings.porta || 4000;
+                        this.isAiEnabled = settings.aiEnabled || false;
+                        this.updateAIStatus();
+                        this.aiToggle.textContent = this.isAiEnabled ? 'Desativar IA' : 'Ativar IA';
+                    } catch (e) {
+                        console.error('Erro ao carregar configurações:', e);
+                    }
+                }
+            }
+
+            saveSettings() {
+                const settings = {
+                    host: this.hostInput.value,
+                    porta: parseInt(this.portaInput.value),
+                    aiEnabled: this.isAiEnabled
+                };
+                localStorage.setItem('mudClientSettings', JSON.stringify(settings));
+            }
+
+            startTimers() {
+                setInterval(() => {
+                    if (this.connectionStartTime) {
+                        const elapsed = Math.floor((Date.now() - this.connectionStartTime) / 1000);
+                        const minutes = Math.floor(elapsed / 60);
+                        const seconds = elapsed % 60;
+                        this.connectionTimeSpan.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    }
+                }, 1000);
+            }
+
+            addMessage(text, type = 'server') {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}`;
+                
+                const timestamp = new Date().toLocaleTimeString('pt-BR');
+                const prefix = {
+                    'system': '[SISTEMA]',
+                    'error': '[ERRO]',
+                    'user': '[VOCÊ]',
+                    'server': '',
+                    'ai': '[IA]'
+                }[type] || '';
+
+                messageDiv.innerHTML = `${prefix ? `<strong>${prefix}</strong> ` : ''}${this.escapeHtml(text)}`;
+                this.outputDiv.appendChild(messageDiv);
+                this.outputDiv.scrollTop = this.outputDiv.scrollHeight;
+                
+                this.messageCount++;
+                this.messageCountSpan.textContent = this.messageCount;
+
+                // Manter apenas últimas 500 mensagens
+                const messages = this.outputDiv.children;
+                if (messages.length > 500) {
+                    this.outputDiv.removeChild(messages[0]);
+                }
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            updateStatus(status, text) {
+                this.statusDiv.className = `status ${status}`;
+                this.statusDiv.textContent = text;
+                this.connectionStatusSpan.textContent = text;
+            }
+
+            updateAIStatus() {
+                if (!this.isAiEnabled) {
+                    this.aiStatus.className = 'ai-status disabled';
+                    this.aiStatus.textContent = 'IA Desabilitada';
+                } else if (this.isAiThinking) {
+                    this.aiStatus.className = 'ai-status thinking';
+                    this.aiStatus.textContent = 'IA Pensando...';
+                } else {
+                    this.aiStatus.className = 'ai-status enabled';
+                    this.aiStatus.textContent = 'IA Ativa';
+                }
+            }
+
+            getCurrentProxy() {
+                return this.proxyUrls[this.currentProxyIndex];
+            }
+
+            tryNextProxy() {
+                this.currentProxyIndex = (this.currentProxyIndex + 1) % this.proxyUrls.length;
+                const newProxy = this.getCurrentProxy();
+                this.proxyUrlSpan.textContent = newProxy;
+                return newProxy;
+            }
+
+            async toggleConnection() {
+                if (this.isConnected) {
+                    this.disconnect();
+                    return;
+                }
+
+                const host = this.hostInput.value.trim();
+                const porta = parseInt(this.portaInput.value);
+
+                if (!host || !porta) {
+                    this.addMessage('Host e porta são obrigatórios', 'error');
+                    return;
+                }
+
+                this.saveSettings();
+                this.connect(host, porta);
+            }
+
+            async connect(host, porta) {
+                this.updateStatus('connecting', 'Conectando...');
+                this.loadingSpinner.style.display = 'inline-block';
+                this.connectBtn.disabled = true;
+                
+                const currentProxy = this.getCurrentProxy();
+                this.addMessage(`Conectando a ${host}:${porta} via ${currentProxy}...`, 'system');
+
+                try {
+                    // Construir URL do WebSocket proxy
+                    const wsUrl = `${currentProxy}/${host}/${porta}`;
+                    
+                    this.ws = new WebSocket(wsUrl);
+
+                    this.ws.onopen = () => {
+                        this.isConnected = true;
+                        this.connectionStartTime = Date.now();
+                        this.reconnectAttempts = 0;
+                        this.updateStatus('connected', 'Conectado');
+                        this.addMessage('Conectado com sucesso!', 'system');
+                        this.addMessage(`Usando proxy: ${currentProxy}`, 'system');
+                        this.connectBtn.textContent = 'Desconectar';
+                        this.connectBtn.disabled = false;
+                        this.commandInput.disabled = false;
+                        this.aiToggle.disabled = false;
+                        this.loadingSpinner.style.display = 'none';
+                        this.commandInput.focus();
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        const data = event.data;
+                        
+                        // Filtrar mensagens de controle do proxy
+                        if (data.includes('Connected to') || data.includes('proxy')) {
+                            this.addMessage(data, 'system');
+                        } else {
+                            this.addMessage(data, 'server');
+                            
+                            if (this.isAiEnabled && !this.isAiThinking) {
+                                this.processAI(data);
+                            }
+                        }
+                    };
+
+                    this.ws.onerror = (error) => {
+                        console.error('Erro WebSocket:', error);
+                        this.addMessage(`Erro na conexão com proxy ${currentProxy}`, 'error');
+                        
+                        // Tentar próximo proxy se houver tentativas restantes
+                        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                            this.reconnectAttempts++;
+                            const nextProxy = this.tryNextProxy();
+                            this.addMessage(`Tentando proxy alternativo: ${nextProxy} (${this.reconnectAttempts}/${this.maxReconnectAttempts})`, 'system');
+                            
+                            setTimeout(() => {
+                                this.connect(host, porta);
+                            }, 2000);
+                        } else {
+                            this.addMessage('Todos os proxies falharam. Verifique se o servidor MUD está online.', 'error');
+                            this.updateStatus('disconnected', 'Erro');
+                            this.loadingSpinner.style.display = 'none';
+                            this.connectBtn.disabled = false;
+                        }
+                    };
+
+                    this.ws.onclose = () => {
+                        this.isConnected = false;
+                        this.updateStatus('disconnected', 'Desconectado');
+                        this.addMessage('Conexão encerrada', 'system');
+                        this.connectBtn.textContent = 'Conectar';
+                        this.connectBtn.disabled = false;
+                        this.commandInput.disabled = true;
+                        this.aiToggle.disabled = true;
+                        this.connectionStartTime = null;
+                        this.connectionTimeSpan.textContent = '--:--';
+                        this.loadingSpinner.style.display = 'none';
+                        this.ws = null;
+                    };
+
+                } catch (error) {
+                    this.addMessage(`Erro ao conectar: ${error.message}`, 'error');
+                    this.updateStatus('disconnected', 'Erro');
+                    this.loadingSpinner.style.display = 'none';
+                    this.connectBtn.disabled = false;
+                }
+            }
+
+            disconnect() {
+                if (this.ws) {
+                    this.ws.close();
+                    this.ws = null;
+                }
+                this.isConnected = false;
+            }
+
+            sendCommand(command) {
+                if (!this.isConnected || !this.ws) {
+                    this.addMessage('Não conectado', 'error');
+                    return;
+                }
+
+                this.addMessage(command, 'user');
+                this.commandHistory.push(command);
+                this.historyIndex = this.commandHistory.length;
+
+                try {
+                    this.ws.send(command + '\n');
+                } catch (error) {
+                    this.addMessage(`Erro ao enviar comando: ${error.message}`, 'error');
+                }
+            }
+
+            toggleAI() {
+                this.isAiEnabled = !this.isAiEnabled;
+                this.aiToggle.textContent = this.isAiEnabled ? 'Desativar IA' : 'Ativar IA';
+                this.updateAIStatus();
+                this.saveSettings();
+                
+                const status = this.isAiEnabled ? 'ativada' : 'desativada';
+                this.addMessage(`IA ${status}`, 'system');
+            }
+
+            processAI(gameOutput) {
+                if (!this.isAiEnabled || this.isAiThinking) return;
+
+                this.isAiThinking = true;
+                this.updateAIStatus();
+
+                setTimeout(() => {
+                    const output = gameOutput.toLowerCase();
+                    let action = '';
+                    
+                    // IA mais inteligente baseada no contexto
+                    if (output.includes('by what name') || output.includes('nome')) {
+                        action = 'elvinn'; // Nome padrão
+                    } else if (output.includes('password') || output.includes('senha')) {
+                        action = ''; // Não enviar senha automaticamente
+                    } else if (output.includes('hit return') || output.includes('pressione enter')) {
+                        action = ''; // Enter vazio
+                    } else if (output.includes('norte') || output.includes('north')) {
+                        action = 'north';
+                    } else if (output.includes('sul') || output.includes('south')) {
+                        action = 'south';
+                    } else if (output.includes('leste') || output.includes('east')) {
+                        action = 'east';
+                    } else if (output.includes('oeste') || output.includes('west')) {
+                        action = 'west';
+                    } else if (output.includes('above') || output.includes('up')) {
+                        action = 'up';
+                    } else if (output.includes('below') || output.includes('down')) {
+                        action = 'down';
+                    } else {
+                        // Ações aleatórias quando não há contexto específico
+                        const actions = ['look', 'inventory', 'score', 'who', 'time', 'help'];
+                        action = actions[Math.floor(Math.random() * actions.length)];
+                    }
+                    
+                    if (action) {
+                        this.addMessage(`Executando: ${action}`, 'ai');
+                        this.sendCommand(action);
+                    } else {
+                        this.addMessage('Aguardando entrada manual...', 'ai');
+                    }
+                    
+                    this.isAiThinking = false;
+                    this.updateAIStatus();
+                }, 1500 + Math.random() * 2000);
+            }
+
+            handleKeyPress(event) {
+                if (event.key === 'Enter') {
+                    const command = this.commandInput.value.trim();
+                    if (command) {
+                        this.sendCommand(command);
+                        this.commandInput.value = '';
+                    }
+                } else if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    if (this.historyIndex > 0) {
+                        this.historyIndex--;
+                        this.commandInput.value = this.commandHistory[this.historyIndex];
+                    }
+                } else if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    if (this.historyIndex < this.commandHistory.length - 1) {
+                        this.historyIndex++;
+                        this.commandInput.value = this.commandHistory[this.historyIndex];
+                    } else {
+                        this.historyIndex = this.commandHistory.length;
+                        this.commandInput.value = '';
+                    }
+                } else if (event.key === 'Tab') {
+                    event.preventDefault();
+                    const current = this.commandInput.value.toLowerCase();
+                    const commands = ['look', 'inventory', 'score', 'who', 'north', 'south', 'east', 'west', 'up', 'down', 'help', 'time', 'quit'];
+                    const match = commands.find(cmd => cmd.startsWith(current));
+                    if (match) {
+                        this.commandInput.value = match;
+                    }
+                }
+            }
+        }
+
+        // Instância global
+        const mudClient = new MudClient();
+
+        // Funções globais
+        function toggleConnection() {
+            mudClient.toggleConnection();
+        }
+
+        function toggleAI() {
+            mudClient.toggleAI();
+        }
+
+        function handleKeyPress(event) {
+            mudClient.handleKeyPress(event);
+        }
+    </script>
+</body>
+</html>
