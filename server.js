@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
 import { parseTargets, resolvePublicTarget } from './lib/network.js';
 import { TelnetDecoder, encodeCommand } from './lib/telnet.js';
 import { suggestCommand } from './lib/copilot.js';
+import { createKnowledge, observe, publicKnowledge } from './lib/observations.js';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 const STATIC = new Map([['/', ['index.html','text/html']], ['/index.html',['index.html','text/html']], ['/app.js',['public/app.js','text/javascript']], ['/styles.css',['public/styles.css','text/css']]]);
@@ -72,7 +73,7 @@ export function createMudServer({ targets = parseTargets(process.env.MUD_TARGETS
     if (old) closeSession(old);
     if (sessions.size + [...pending.values()].reduce((a,b) => a+b,0) >= maxSessions || [...sessions.values()].filter(s => s.ip === ip).length + (pending.get(ip) || 0) >= 3) throw fail(429, 'Limite de conexões atingido.');
     pending.set(ip, (pending.get(ip) || 0) + 1);
-    const session = { id: randomBytes(32).toString('hex'), ip, target, events: [], sequence: 0, context: '', sharing: false, connected: false, sensitive: false, lastUserActivity: Date.now(), detachedAt: Date.now(), stream: null, socket: null, aiBusy: false, lastAi: 0 };
+    const session = { id: randomBytes(32).toString('hex'), ip, target, events: [], sequence: 0, context: '', knowledge: createKnowledge(), observationBuffer: '', lastCommand: '', sharing: false, connected: false, sensitive: false, lastUserActivity: Date.now(), detachedAt: Date.now(), stream: null, socket: null, aiBusy: false, lastAi: 0 };
     let abandoned = false;
     res.once('close', () => { if (!res.writableEnded) { abandoned = true; if (sessions.has(session.id)) closeSession(session); else session.socket?.destroy(); } });
     try {
@@ -96,7 +97,9 @@ export function createMudServer({ targets = parseTargets(process.env.MUD_TARGETS
           session.sensitive = true; session.sharing = false; session.context = ''; session.aiController?.abort();
           push(session, 'privacy', { sensitive: true, sharing: false });
         }
-        push(session, 'output', { text });
+        push(session, 'output', { text, runs: decoder.runs });
+        session.observationBuffer = (session.observationBuffer + text).slice(-12000);
+        observe(session.knowledge, session.lastCommand, session.observationBuffer);
         if (session.sharing && !session.sensitive) session.context = (session.context + text).slice(-12000);
       });
       await new Promise((resolveConnect, reject) => {
@@ -145,6 +148,7 @@ export function createMudServer({ targets = parseTargets(process.env.MUD_TARGETS
       // Refresh a session cookie during active use; never expose its token to JS.
       res.setHeader('Set-Cookie', `${COOKIE}=${session.id}; HttpOnly; SameSite=Strict; Path=/; Max-Age=1800${origin.startsWith('https:') ? '; Secure' : ''}`);
       if (url.pathname === '/api/session' && req.method === 'GET') return json(res, 200, { connected: session.connected, target: session.target.id, sharing: session.sharing, sensitive: session.sensitive });
+      if (url.pathname === '/api/knowledge' && req.method === 'GET') return json(res, 200, publicKnowledge(session.knowledge));
       if (url.pathname === '/api/events' && req.method === 'GET') {
         session.stream?.end(); session.stream = res; session.detachedAt = null;
         res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Connection': 'keep-alive', 'X-Accel-Buffering': 'no' });
@@ -177,6 +181,8 @@ export function createMudServer({ targets = parseTargets(process.env.MUD_TARGETS
         let encoded;
         try { encoded = encodeCommand(input.command, session.target.encoding); } catch { throw fail(400, 'O servidor não aceita um dos caracteres enviados.'); }
         session.socket.write(encoded);
+        session.lastCommand = input.command;
+        session.observationBuffer = '';
         // Never retain commands: they may contain passwords even without masking.
         return json(res, 200, { ok: true, sharing: session.sharing });
       }
@@ -184,7 +190,8 @@ export function createMudServer({ targets = parseTargets(process.env.MUD_TARGETS
         if (!session.sharing || session.sensitive || !session.context.trim()) throw fail(409, 'Ative a análise e receba texto do jogo antes de pedir uma sugestão.');
         if (session.aiBusy || Date.now() - session.lastAi < 10000) throw fail(429, 'Aguarde antes de pedir outra sugestão.');
         session.aiBusy = true; session.lastAi = Date.now(); session.aiController = new AbortController();
-        try { const suggestion = await suggestCommand(session.context, fetchImpl, session.aiController.signal); session.aiController.signal.throwIfAborted(); return json(res, 200, suggestion); }
+        const knowledge = JSON.stringify(publicKnowledge(session.knowledge));
+        try { const suggestion = await suggestCommand(`${session.context}\n\nFatos estruturados já observados (podem estar incompletos):\n${knowledge}`, fetchImpl, session.aiController.signal); session.aiController.signal.throwIfAborted(); return json(res, 200, suggestion); }
         catch { throw fail(502, 'Não foi possível obter uma sugestão. Tente novamente.'); }
         finally { session.aiBusy = false; session.aiController = null; }
       }

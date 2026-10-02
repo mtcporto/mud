@@ -20,6 +20,10 @@ node tests/fixture.js
 
 O último comando disponibiliza http://127.0.0.1:3123 com jogo e IA simulados para testar a interface, sem acessar contas reais. Não publique essa fixture. Os testes automatizados usam TCP local e respostas de IA simuladas.
 
+## Base de conhecimento
+
+O servidor reconhece respostas posteriores a `score`, `spells`, `alias`, `equip` e `examine <item>`. Elas ficam estruturadas na sessão e podem ser consultadas em `GET /api/knowledge`; por enquanto são memória temporária, apagada ao desconectar ou reiniciar. Esse é o primeiro contrato para persistir depois em Turso: perfil do personagem, feitiços, aliases, equipamento e atributos de itens examinados. A captura não tenta adivinhar campos nem trata texto arbitrário como dado confiável.
+
 ## Copiloto e privacidade
 
 O servidor chama `https://copilot-mtcporto.vercel.app/v1/chat/completions` com `gpt-4o`, sem chave. Depois do login, ative o compartilhamento e use `look`: somente as mensagens posteriores entram no contexto (máximo de 12.000 caracteres). Desativar o compartilhamento apaga o contexto e cancela a solicitação em andamento. O serviço externo recebe esse texto; não compartilhe dados privados do jogo.
