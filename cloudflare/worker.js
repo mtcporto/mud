@@ -45,7 +45,8 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === '/api/config') return Response.json({ targets: [{ id: 'fatal', name: 'Fatal Dimensions', host: HOST, port: PORT }] });
     if (url.pathname === '/api/ws') {
-      if (request.headers.get('Origin') !== url.origin) return new Response('Origem não permitida', { status: 403 });
+      const origin = request.headers.get('Origin');
+      if (origin !== 'https://mud-indol.vercel.app' && origin !== 'http://127.0.0.1:3001' && origin !== 'http://localhost:3001') return new Response('Origem não permitida', { status: 403 });
       const id = env.MUD_SESSION.idFromName(crypto.randomUUID());
       return env.MUD_SESSION.get(id).fetch(request);
     }
