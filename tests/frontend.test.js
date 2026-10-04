@@ -65,6 +65,20 @@ test('connected client sends blank Enter and only shares opted-in game output wi
   get('command').value = '';
   get('command-form').onsubmit({ preventDefault() {} });
   assert.deepEqual(webSocket.sent, ['']);
+  assert.equal(get('terminal').textContent, '> [Enter]\n');
+
+  get('command').value = 'score';
+  get('command-form').onsubmit({ preventDefault() {} });
+  get('sensitive').checked = true;
+  get('sensitive').onchange();
+  get('command').value = 'senha-secreta';
+  get('command-form').onsubmit({ preventDefault() {} });
+  assert.deepEqual(webSocket.sent, ['', 'score', 'senha-secreta']);
+  assert.match(get('terminal').textContent, /> score\n/);
+  assert.match(get('terminal').textContent, /Entrada privada enviada; conteudo oculto/);
+  assert.equal(get('terminal').textContent.includes('senha-secreta'), false);
+  get('sensitive').checked = false;
+  get('sensitive').onchange();
 
   webSocket.onmessage({ data: 'mensagem anterior\n' });
   get('sharing').checked = true;
@@ -77,7 +91,8 @@ test('connected client sends blank Enter and only shares opted-in game output wi
   assert.equal(get('suggested-command').textContent, 'look');
 
   get('approve').onclick();
-  assert.deepEqual(webSocket.sent, ['', 'look']);
+  assert.deepEqual(webSocket.sent, ['', 'score', 'senha-secreta', 'look']);
+  assert.match(get('terminal').textContent, /> look\n/);
 
   await get('load-knowledge').onclick();
   assert.match(get('saved-knowledge').textContent, /Elvinn/);
