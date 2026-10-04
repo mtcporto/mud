@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   commandCategory, createKnowledge, observe, parseCharacterCreation,
-  parseEquipment, parseExamine, parseObservation, parseScore, parseSpells, parseEffects,
+  parseEquipment, parseExamine, parseObservation, parseScore, parseSpells, parseEffects, parseMap,
 } from '../lib/observations.js';
 
 test('knowledge categorizes useful MUD reports without interpreting arbitrary output', () => {
@@ -91,6 +91,13 @@ Spell: 'bless' modifies hitroll by 2 for 8 hours.`);
   assert.deepEqual(knowledge.activeEffects, [{
     name: 'armor', attribute: 'armor', amount: -20, duration: null,
   }]);
+
+  const mapText = 'North Gate---Main Street\n  Market Square\n';
+  assert.deepEqual(commandCategory('look map'), { command: 'map', subject: 'midgaard' });
+  assert.deepEqual(parseMap(mapText), { area: 'midgaard', rows: ['North Gate---Main Street', '  Market Square'] });
+  assert.deepEqual(parseObservation('look map', mapText)?.data, {
+    area: 'midgaard', rows: ['North Gate---Main Street', '  Market Square'],
+  });
 });
 
 test('character creation screens become structured options, skill choices, and XP costs without retaining prompt text', () => {
