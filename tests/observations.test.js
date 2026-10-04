@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   commandCategory, createKnowledge, observe, parseCharacterCreation,
-  parseEquipment, parseExamine, parseObservation, parseScore, parseSpells, parseEffects, parseMap,
+  parseEquipment, parseExamine, parseObservation, parseScore, parseSpells, parseEffects, parseMap, parseRoom,
 } from '../lib/observations.js';
 
 test('knowledge categorizes useful MUD reports without interpreting arbitrary output', () => {
@@ -114,6 +114,18 @@ Spell: 'bless' modifies hitroll by 2 for 8 hours.`);
   assert.deepEqual(parseObservation('look map', mapText)?.data, {
     area: 'midgaard', rows: ['North Gate---Main Street', '  Market Square'],
   });
+  const roomText = `Temple Of Fatal
+Large steps lead through the temple gate.
+A plaque is here.
+20/20hp 100/100ma 50mv | NSU >`;
+  assert.deepEqual(commandCategory('look'), { command: 'look', subject: '' });
+  assert.deepEqual(parseRoom(roomText), {
+    name: 'Temple Of Fatal',
+    description: 'Large steps lead through the temple gate.\nA plaque is here.',
+    exits: ['N', 'S', 'U'],
+    visibleEntities: ['A plaque is here.'],
+  });
+  assert.equal(parseObservation('look', roomText)?.subject, 'temple of fatal');
 });
 
 test('character creation screens become structured options, skill choices, and XP costs without retaining prompt text', () => {

@@ -115,6 +115,32 @@ points exp/level points exp/level
   assert.deepEqual(build.args.slice(1, 10), ['Luna', 'human', 'warrior', 'female', 'neutral', 'sword', 0, 40, 1000]);
 });
 
+test('Turso stores room observations under the room name with structured exits', async () => {
+  const batches = [];
+  const client = {
+    async execute() { return { rows: [] }; },
+    async batch(statements, mode) { batches.push({ statements, mode }); return []; },
+  };
+  const store = new TursoKnowledgeStore({
+    url: 'libsql://example.turso.io',
+    authToken: 'test-token',
+    clientFactory: () => client,
+  });
+  await store.save(profileId, 'look', `Temple Of Fatal
+Large steps lead through the temple gate.
+20/20hp 100/100ma 50mv | NSU >`);
+
+  const observation = batches[0].statements.find(statement => statement.sql.includes('INSERT INTO mud_observations'));
+  assert.equal(observation.args[1], 'look');
+  assert.equal(observation.args[2], 'temple of fatal');
+  assert.deepEqual(JSON.parse(observation.args[4]), {
+    name: 'Temple Of Fatal',
+    description: 'Large steps lead through the temple gate.',
+    exits: ['N', 'S', 'U'],
+    visibleEntities: [],
+  });
+});
+
 test('Turso reads join examined details to worn gear and retain the current score snapshot', async () => {
   const client = {
     async execute(statement) {
