@@ -68,4 +68,22 @@ test('Vercel knowledge API saves the validated POST text', async t => {
     command: 'score',
     text,
   });
+
+  const examineText = 'You see a sword of great but cheap craftsmanship.';
+  const examineResponse = responseMock();
+  await handler({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: {
+      profile: '410b4c85-7ff2-4bd2-94bb-3e241e791c05',
+      command: 'examine sword',
+      text: examineText,
+    },
+  }, examineResponse);
+  assert.equal(examineResponse.statusCode, 201);
+  assert.deepEqual(saved, {
+    profile: '410b4c85-7ff2-4bd2-94bb-3e241e791c05',
+    command: 'examine sword',
+    text: examineText,
+  });
 });

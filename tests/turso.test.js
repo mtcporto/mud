@@ -55,12 +55,17 @@ test('Turso store validates opaque profiles and batches parsed observations safe
     { name: 'armor', attribute: 'armor', amount: -20, duration: '12 hours' },
   ]);
 
+  await store.save(profileId, 'examine sword', 'You see a sword of great but cheap craftsmanship.');
+  assert.ok(batches[2].statements.some(statement => statement.sql.includes('DELETE FROM mud_observations')));
+  assert.ok(batches[2].statements.some(statement => statement.sql.includes('DELETE FROM mud_items')));
+  assert.ok(batches[2].statements.some(statement => statement.sql.includes('item_name, subject, raw_text')));
+
   await store.save(profileId, 'equip', `<worn around wrist> Ammonet's Brassard
 <worn around wrist> Ammonet's Brassard`);
-  assert.equal(batches[2].statements.filter(statement => statement.sql.includes('INSERT INTO mud_equipment')).length, 2);
+  assert.equal(batches[3].statements.filter(statement => statement.sql.includes('INSERT INTO mud_equipment')).length, 2);
   await store.clear(profileId);
-  assert.equal(batches[3].statements.length, 9);
-  assert.ok(batches[3].statements.every(statement => statement.args[0] === profileId));
+  assert.equal(batches[4].statements.length, 9);
+  assert.ok(batches[4].statements.every(statement => statement.args[0] === profileId));
 });
 
 test('Turso stores creation catalogs, per-character choices, and a sanitized structured snapshot', async () => {

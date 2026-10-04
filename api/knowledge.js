@@ -29,12 +29,14 @@ export default async function handler(req, res) {
   if (!isProfileId(profile)) return respond(res, 400, { error: 'Perfil inválido.' });
 
   let observation;
+  let rawCommand;
   let rawText;
   if (req.method === 'POST') {
     const { command, text } = req.body || {};
     if (typeof command !== 'string' || command.length > 100 || typeof text !== 'string' || text.length > 12000) {
       return respond(res, 400, { error: 'Observação inválida.' });
     }
+    rawCommand = command;
     rawText = text;
     observation = parseObservation(command, text);
     if (!observation) return respond(res, 400, { error: 'Comando não reconhecido.' });
@@ -47,7 +49,7 @@ export default async function handler(req, res) {
       await store.clear(profile);
       return respond(res, 200, { cleared: true });
     }
-    await store.save(profile, observation.command, rawText);
+    await store.save(profile, rawCommand, rawText);
     return respond(res, 201, { saved: true });
   } catch (error) {
     const message = error instanceof Error
