@@ -48,7 +48,16 @@ export default async function handler(req, res) {
     await store.save(profile, observation.command, text);
     return respond(res, 201, { saved: true });
   } catch (error) {
-    console.error('Turso knowledge API failed.');
+    const message = error instanceof Error
+      ? error.message
+        .replace(/(?:libsql|https?):\/\/[^\s'"]+/gi, '[redacted-url]')
+        .replace(/bearer\s+\S+/gi, 'Bearer [redacted]')
+      : 'Unknown error';
+    console.error('Turso knowledge API failed.', {
+      name: error instanceof Error ? error.name : 'UnknownError',
+      code: error && typeof error === 'object' && 'code' in error ? error.code : undefined,
+      message,
+    });
     return respond(res, 503, { error: 'Banco de conhecimento indisponível.' });
   }
 }
