@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  commandCategory, createKnowledge, observe, parseCharacterCreation, parseEquipment,
-  parseExamine, parseObservation, parseScore, parseSpells,
+  commandCategory, createKnowledge, observe, parseAffects, parseCharacterCreation,
+  parseEquipment, parseExamine, parseObservation, parseScore, parseSpells,
 } from '../lib/observations.js';
 
 test('knowledge categorizes useful MUD reports without interpreting arbitrary output', () => {
@@ -32,6 +32,19 @@ test('score, equipment, examined-item effects and spells are parsed into structu
   assert.deepEqual(score.resources.hit, { current: 7073, maximum: 7073 });
   assert.equal(score.experience, 113778);
   assert.equal(score.next_level, 1222);
+  const status = parseScore(`Name : Luna            Level : 1
+Hunger : very        Thirst : very         Adrenaline : none
+Drunk : not          Gold : 548            Silver : 460
+Alignment : 961 angelic   Explored : 67%
+Hitroll : 80         Damroll : 90`);
+  assert.deepEqual({
+    hunger: status.hunger, thirst: status.thirst, adrenaline: status.adrenaline, drunk: status.drunk,
+    gold: status.gold, silver: status.silver, alignment: status.alignment, explored: status.explored,
+    hitroll: status.hitroll, damroll: status.damroll,
+  }, {
+    hunger: 'very', thirst: 'very', adrenaline: 'none', drunk: 'not',
+    gold: 548, silver: 460, alignment: 961, explored: '67%', hitroll: 80, damroll: 90,
+  });
 
   const equipment = parseEquipment(`<worn on body>  (Magical) (Glowing) (Humming) Elvish Armor of the Gods
 <worn about body>   (Magical) green robes
@@ -61,6 +74,21 @@ Affects none by 0.`);
     { name: 'cure light', proficiency: 93, mana: 10 },
     { name: 'armor', proficiency: 100, mana: 5 },
   ]);
+
+  const activeAffects = parseAffects(`You are affected by the following spells:
+Spell: 'armor' modifies armor by -20 for 12 hours.
+Spell: 'bless' modifies hitroll by 2 for 8 hours.`);
+  assert.deepEqual(activeAffects, [
+    { name: 'armor', attribute: 'armor', amount: -20, duration: '12 hours' },
+    { name: 'bless', attribute: 'hitroll', amount: 2, duration: '8 hours' },
+  ]);
+  assert.deepEqual(commandCategory('affects'), { command: 'affect', subject: '' });
+  assert.deepEqual(commandCategory('effect'), { command: 'affect', subject: '' });
+  const knowledge = createKnowledge();
+  observe(knowledge, 'affects', 'Spell: armor modifies armor by -20.');
+  assert.deepEqual(knowledge.activeAffects, [{
+    name: 'armor', attribute: 'armor', amount: -20, duration: null,
+  }]);
 });
 
 test('character creation screens become structured options, skill choices, and XP costs without retaining prompt text', () => {

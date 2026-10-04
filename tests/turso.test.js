@@ -39,20 +39,28 @@ test('Turso store validates opaque profiles and batches parsed observations safe
   assert.equal(await store.save(profileId, 'say hello', 'untracked output'), false);
   assert.equal(await store.save(profileId, 'score', 'Name : Elvinn Level : 91\nStr: 16 (20) Hit: 7073/7073'), true);
 
-  assert.equal(executed.length, 11);
+  assert.equal(executed.length, 14);
   assert.equal(batches.length, 1);
   assert.equal(batches[0].mode, 'write');
   assert.ok(batches[0].statements.some(statement => statement.sql.includes('INSERT INTO mud_observations')));
   assert.ok(batches[0].statements.some(statement => statement.sql.includes('score_json')));
   const scoreUpdate = batches[0].statements.find(statement => statement.sql.includes('score_json'));
   assert.equal(scoreUpdate.args[0], 'Elvinn');
+  assert.ok(batches[0].statements.some(statement => statement.sql.includes('INSERT INTO mud_score_history')));
+
+  await store.save(profileId, 'affects', `Spell: 'armor' modifies armor by -20 for 12 hours.`);
+  assert.equal(batches[1].statements.filter(statement => statement.sql.includes('INSERT INTO mud_active_affects')).length, 1);
+  assert.deepEqual(
+    batches[1].statements.find(statement => statement.sql.includes('INSERT INTO mud_active_affects')).args.slice(1, 5),
+    ['armor', 'armor', -20, '12 hours'],
+  );
 
   await store.save(profileId, 'equip', `<worn around wrist> Ammonet's Brassard
 <worn around wrist> Ammonet's Brassard`);
-  assert.equal(batches[1].statements.filter(statement => statement.sql.includes('INSERT INTO mud_equipment')).length, 2);
+  assert.equal(batches[2].statements.filter(statement => statement.sql.includes('INSERT INTO mud_equipment')).length, 2);
   await store.clear(profileId);
-  assert.equal(batches[2].statements.length, 7);
-  assert.ok(batches[2].statements.every(statement => statement.args[0] === profileId));
+  assert.equal(batches[3].statements.length, 9);
+  assert.ok(batches[3].statements.every(statement => statement.args[0] === profileId));
 });
 
 test('Turso stores creation catalogs, per-character choices, and a sanitized structured snapshot', async () => {
@@ -121,6 +129,12 @@ test('Turso reads join examined details to worn gear and retain the current scor
         updated_at: 'now',
       }] };
       if (statement.sql.includes('SELECT spell_name')) return { rows: [] };
+      if (statement.sql.includes('SELECT effect_name')) return { rows: [
+        { effect_name: 'bless', attribute: 'hitroll', amount: 2, duration: '8 hours', updated_at: 'now' },
+      ] };
+      if (statement.sql.includes('SELECT score_json, captured_at FROM mud_score_history')) return { rows: [
+        { score_json: JSON.stringify({ alignment: 0 }), captured_at: 'now' },
+      ] };
       if (statement.sql.includes('SELECT * FROM mud_character_builds')) return { rows: [{
         character_name: 'Luna', race: 'human', base_class: 'warrior', sex: 'female',
         alignment: 'neutral', weapon: 'sword', ansi_color: 0, creation_points: 40,
@@ -148,6 +162,10 @@ test('Turso reads join examined details to worn gear and retain the current scor
   });
   const result = await store.get(profileId);
   assert.equal(result.profile.characterName, 'Elvinn');
+  assert.deepEqual(result.scoreHistory, [{ score: { alignment: 0 }, capturedAt: 'now' }]);
+  assert.deepEqual(result.activeAffects, [{
+    name: 'bless', attribute: 'hitroll', amount: 2, duration: '8 hours', updatedAt: 'now',
+  }]);
   assert.equal(result.equipment.length, 3);
   assert.equal(result.equipmentAnalysis.equipped[0].examined.affects[0].amount, -10);
   assert.equal(result.equipmentAnalysis.unexamined.length, 2);

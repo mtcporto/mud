@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import handler from '../api/knowledge.js';
+import { TursoKnowledgeStore } from '../lib/turso.js';
 
 function responseMock() {
   return {
@@ -32,4 +33,39 @@ test('Vercel knowledge API restricts browser origins and rejects invalid request
   await handler({ method: 'OPTIONS', headers: {}, query: {} }, unsupportedMethod);
   assert.equal(unsupportedMethod.statusCode, 405);
   assert.equal(unsupportedMethod.headers.Allow, 'GET, POST, DELETE');
+});
+
+test('Vercel knowledge API saves the validated POST text', async t => {
+  const previousUrl = process.env.TURSO_DATABASE_URL;
+  const previousToken = process.env.TURSO_AUTH_TOKEN;
+  const originalSave = TursoKnowledgeStore.prototype.save;
+  let saved;
+
+  process.env.TURSO_DATABASE_URL = 'libsql://test.example';
+  process.env.TURSO_AUTH_TOKEN = 'test-token';
+  TursoKnowledgeStore.prototype.save = async function (profile, command, text) {
+    saved = { profile, command, text };
+  };
+  t.after(() => {
+    TursoKnowledgeStore.prototype.save = originalSave;
+    if (previousUrl === undefined) delete process.env.TURSO_DATABASE_URL;
+    else process.env.TURSO_DATABASE_URL = previousUrl;
+    if (previousToken === undefined) delete process.env.TURSO_AUTH_TOKEN;
+    else process.env.TURSO_AUTH_TOKEN = previousToken;
+  });
+
+  const text = 'Name : Luna       Level   : 1';
+  const response = responseMock();
+  await handler({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: { profile: '410b4c85-7ff2-4bd2-94bb-3e241e791c05', command: 'score', text },
+  }, response);
+
+  assert.equal(response.statusCode, 201);
+  assert.deepEqual(saved, {
+    profile: '410b4c85-7ff2-4bd2-94bb-3e241e791c05',
+    command: 'score',
+    text,
+  });
 });
