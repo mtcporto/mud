@@ -39,7 +39,8 @@ test('Turso store validates opaque profiles and batches parsed observations safe
   assert.equal(await store.save(profileId, 'say hello', 'untracked output'), false);
   assert.equal(await store.save(profileId, 'score', 'Name : Elvinn Level : 91\nStr: 16 (20) Hit: 7073/7073'), true);
 
-  assert.equal(executed.length, 14);
+  assert.equal(executed.length, 15);
+  assert.ok(executed.some(statement => String(statement).includes('INSERT INTO mud_score_history')));
   assert.equal(batches.length, 1);
   assert.equal(batches[0].mode, 'write');
   assert.ok(batches[0].statements.some(statement => statement.sql.includes('INSERT INTO mud_observations')));
