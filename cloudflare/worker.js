@@ -22,6 +22,7 @@ export class MudSession {
   constructor(ctx) {
     this.ctx = ctx; this.socket = null; this.client = null;
     this.profileId = null; this.apiOrigin = null; this.pendingObservation = null; this.observationTimer = null;
+    this.creationBuffer = ''; this.creationTimer = null;
   }
 
   async fetch(request) {
@@ -37,6 +38,7 @@ export class MudSession {
     });
     server.addEventListener('close', () => {
       this.flushObservation();
+      this.flushCreation();
       this.client = null; this.socket?.close(); this.socket = null;
     });
     this.ctx.waitUntil(this.open());
@@ -59,11 +61,19 @@ export class MudSession {
       if (this.client?.readyState === WebSocket.OPEN) this.client.close(1011, 'Conexão com o MUD falhou');
     } finally {
       this.flushObservation();
+      this.flushCreation();
       this.writer?.releaseLock(); this.socket = null;
     }
   }
 
   captureOutput(text) {
+    if (text) {
+      this.creationBuffer = (this.creationBuffer + text).slice(-12000);
+      if (/\bCharacter\s*:[\s\S]*?\bCreation Points\s*:/i.test(this.creationBuffer)) {
+        clearTimeout(this.creationTimer);
+        this.creationTimer = setTimeout(() => this.flushCreation(), 1200);
+      }
+    }
     if (!text || !this.pendingObservation) return;
     this.pendingObservation.text = (this.pendingObservation.text + text).slice(-12000);
     this.pendingObservation.promptTail = (this.pendingObservation.promptTail + text).slice(-300);
@@ -85,6 +95,15 @@ export class MudSession {
     const observation = this.pendingObservation;
     this.pendingObservation = null;
     if (observation?.text.trim()) this.ctx.waitUntil(this.saveObservation(observation));
+  }
+
+  flushCreation() {
+    clearTimeout(this.creationTimer);
+    this.creationTimer = null;
+    const text = this.creationBuffer;
+    this.creationBuffer = '';
+    const start = text.search(/\bCharacter\s*:/i);
+    if (start >= 0) this.ctx.waitUntil(this.saveObservation({ command: 'creation', text: text.slice(start) }));
   }
 
   async saveObservation(observation) {
@@ -160,6 +179,11 @@ export default {
       }
       const knowledgeSummary = savedKnowledge && {
         profile: savedKnowledge.profile,
+        characterCreation: {
+          build: savedKnowledge.characterCreation?.build,
+          selectedSkills: savedKnowledge.characterCreation?.skillChoices
+            ?.filter(choice => choice.state !== 'available') || [],
+        },
         equipmentAnalysis: savedKnowledge.equipmentAnalysis,
         items: savedKnowledge.items.map(({ name, data }) => ({ name, data })),
         spells: savedKnowledge.spells,

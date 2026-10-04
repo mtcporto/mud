@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { commandCategory, createKnowledge, observe, parseEquipment, parseExamine, parseScore, parseSpells } from '../lib/observations.js';
+import {
+  commandCategory, createKnowledge, observe, parseCharacterCreation, parseEquipment,
+  parseExamine, parseObservation, parseScore, parseSpells,
+} from '../lib/observations.js';
 
 test('knowledge categorizes useful MUD reports without interpreting arbitrary output', () => {
   assert.deepEqual(commandCategory('examine silver sword'), { command: 'examine', subject: 'silver sword' });
@@ -58,4 +61,83 @@ Affects none by 0.`);
     { name: 'cure light', proficiency: 93, mana: 10 },
     { name: 'armor', proficiency: 100, mana: 5 },
   ]);
+});
+
+test('character creation screens become structured options, skill choices, and XP costs without retaining prompt text', () => {
+  const raw = `New character. Give me a password for Luna:
+/ Creation \\\\ Customize \\/ Specialize \\\\
+Character: Luna           Creation Points: 40        XP per level: 1000
+
+     Race          Base Class      Sex             Weapons          Options
+ [X] human     [ ] mage        [ ] male        [X] sword        [ ] Ansi Color
+ [ ] elf       [ ] cleric      [X] female      [ ] mace
+ [ ] dwarf     [ ] thief                       [ ] dagger
+ [ ] giant     [X] warrior         Alignment   [ ] axe
+ [ ] halfling                  [ ] good        [ ] staff
+ [ ] kender                    [X] neutral     [ ] flail
+ [ ] drow                      [ ] evil        [ ] whip
+                                               [ ] polearm
+Commands: customize, specialize, done, help.
+
+       Groups                    Skills                    Skills
+ [ ]  8 attack             [x]  4 bash               [ ]  5 berserk
+ [ ]  8 benedictions       [x]  2 dagger             [ ]  4 dirt kicking
+ [ ]  9 combat             [x]  4 disarm             [ ]  6 dodge
+ [ ]  8 creation           [x]  3 enhanced damage    [ ]  4 fast healing
+ [ ]  8 curative           [ ]  8 findtrap           [x]  4 flail
+ [ ]  9 enhancement        [ ]  6 haggle              [ ]  4 hand to hand
+ [ ]  6 harmful            [ ]  6 hide                [ ]  1 hunt
+ [ ]  6 healing            [ ]  3 kick                [ ]  8 lore
+ [ ]  9 maladictions       [x]  3 mace                [ ]  8 meditation
+ [ ]  8 protective         [x]  4 parry               [ ]  8 peek
+ [ ]  9 transportation     [ ]  8 pick lock           [x]  4 polearm
+Commands: down, done, help.
+
+       Groups                    Skills                    Skills
+ [X] 40 warrior default    [*]  2 recall             [ ]  8 removetrap
+ [x] 20 weaponsmaster      [x]  4 rescue             [*]  8 scrolls
+ [ ]  8 weather            [*]  3 second attack      [x]  3 second weapon
+                          [ ]  3 sharpen             [x]  2 shield block
+                          [ ]  6 sneak               [x]  3 spear
+                          [*]  8 staves              [*]  2 sword
+                          [x]  4 third attack        [ ]  8 trip
+                          [*]  8 wands               [x]  4 whip
+                          [x]  4 axe                 [ ]  2 eyepoke
+                          [*]  1 carve
+Commands: creation, specialize, done, help.
+
+The experience breakdown is as follows:
+points   exp/level     points   exp/level
+40        1000         90        6000
+50        1500         100       8000
+60        2000         110      12000
+70        3000         120      16000
+80        4000         130      24000`;
+  const creation = parseCharacterCreation(raw);
+  assert.equal(creation.characterName, 'Luna');
+  assert.equal(creation.creationPoints, 40);
+  assert.equal(creation.experiencePerLevel, 1000);
+  assert.deepEqual(creation.selections, {
+    race: 'human', baseClass: 'warrior', sex: 'female', alignment: 'neutral', weapon: 'sword', ansiColor: false,
+  });
+  assert.equal(creation.options.filter(option => option.category === 'race').length, 7);
+  assert.deepEqual(creation.groups.find(group => group.name === 'warrior default'), {
+    name: 'warrior default', cost: 40, state: 'selected',
+  });
+  assert.deepEqual(creation.groups.find(group => group.name === 'weaponsmaster'), {
+    name: 'weaponsmaster', cost: 20, state: 'inherited',
+  });
+  assert.deepEqual(creation.skills.find(skill => skill.name === 'recall'), {
+    name: 'recall', cost: 2, state: 'fixed',
+  });
+  assert.deepEqual(creation.skills.find(skill => skill.name === 'bash'), {
+    name: 'bash', cost: 4, state: 'inherited',
+  });
+  assert.deepEqual(creation.experienceCurve[0], { creationPoints: 40, experiencePerLevel: 1000 });
+  assert.deepEqual(creation.experienceCurve.at(-1), { creationPoints: 130, experiencePerLevel: 24000 });
+
+  const observation = parseObservation('creation', raw);
+  assert.ok(observation);
+  assert.equal(observation.raw.includes('password'), false);
+  assert.equal(commandCategory('creation')?.command, 'creation');
 });

@@ -10,4 +10,4 @@ npx wrangler dev
 npx wrangler deploy
 ```
 
-`TURSO_DATABASE_URL` deve ser a URL `libsql://...` do banco. As tabelas são criadas automaticamente na primeira captura. O Worker encaminha apenas respostas dos comandos reconhecidos; para sugestões, o perfil salvo só é enviado ao GPT-4o quando o usuário ativa o consentimento na interface. `Dados salvos do personagem` permite consultar ou apagar os registros daquele perfil de navegador.
+`TURSO_DATABASE_URL` deve ser a URL `libsql://...` do banco. As tabelas são criadas automaticamente na primeira captura. O Worker encaminha respostas dos comandos reconhecidos e snapshots dos painéis de criação; senhas nunca são persistidas. O painel vira um catálogo de opções/custos e uma seleção estruturada por perfil. Para sugestões, o resumo do perfil só é enviado ao GPT-4o quando o usuário ativa o consentimento na interface. `Dados salvos do personagem` permite consultar ou apagar os registros daquele perfil de navegador.

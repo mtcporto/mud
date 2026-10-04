@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       await store.clear(profile);
       return respond(res, 200, { cleared: true });
     }
-    await store.save(profile, observation.command, observation.raw);
+    await store.save(profile, observation.command, text);
     return respond(res, 201, { saved: true });
   } catch (error) {
     console.error('Turso knowledge API failed.');
