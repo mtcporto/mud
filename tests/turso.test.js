@@ -39,7 +39,7 @@ test('Turso store validates opaque profiles and batches parsed observations safe
   assert.equal(await store.save(profileId, 'say hello', 'untracked output'), false);
   assert.equal(await store.save(profileId, 'score', 'Name : Elvinn Level : 91\nStr: 16 (20) Hit: 7073/7073'), true);
 
-  assert.equal(executed.length, 15);
+  assert.equal(executed.length, 16);
   assert.ok(executed.some(statement => String(statement).includes('INSERT INTO mud_score_history')));
   assert.equal(batches.length, 1);
   assert.equal(batches[0].mode, 'write');
@@ -55,16 +55,17 @@ test('Turso store validates opaque profiles and batches parsed observations safe
     { name: 'armor', attribute: 'armor', amount: -20, duration: '12 hours' },
   ]);
 
+  assert.equal(await store.save(profileId, 'examine sword', 'You do not see that here.'), false);
   await store.save(profileId, 'examine sword', 'You see a sword of great but cheap craftsmanship.');
   assert.ok(batches[2].statements.some(statement => statement.sql.includes('DELETE FROM mud_observations')));
   assert.ok(batches[2].statements.some(statement => statement.sql.includes('DELETE FROM mud_items')));
   assert.ok(batches[2].statements.some(statement => statement.sql.includes('item_name, subject, raw_text')));
 
-  await store.save(profileId, 'equip', `<worn around wrist> Ammonet's Brassard
+  await store.save(profileId, 'equipment', `<worn around wrist> Ammonet's Brassard
 <worn around wrist> Ammonet's Brassard`);
   assert.equal(batches[3].statements.filter(statement => statement.sql.includes('INSERT INTO mud_equipment')).length, 2);
   await store.clear(profileId);
-  assert.equal(batches[4].statements.length, 9);
+  assert.equal(batches[4].statements.length, 10);
   assert.ok(batches[4].statements.every(statement => statement.args[0] === profileId));
 });
 
@@ -132,13 +133,40 @@ Large steps lead through the temple gate.
 
   const observation = batches[0].statements.find(statement => statement.sql.includes('INSERT INTO mud_observations'));
   assert.equal(observation.args[1], 'look');
-  assert.equal(observation.args[2], 'temple of fatal');
+  assert.match(observation.args[2], /^temple of fatal#[a-z0-9]+$/);
   assert.deepEqual(JSON.parse(observation.args[4]), {
     name: 'Temple Of Fatal',
     description: 'Large steps lead through the temple gate.',
     exits: ['N', 'S', 'U'],
     visibleEntities: [],
   });
+  await store.save(profileId, 'look', `Temple Of Fatal
+Steps descend to the square.
+20/20hp 100/100ma 50mv | NSU >`);
+  const secondRoom = batches[1].statements.find(statement => statement.sql.includes('INSERT INTO mud_observations'));
+  assert.notEqual(secondRoom.args[2], observation.args[2]);
+});
+
+test('Turso stores practice reports and individual practice updates separately from spells', async () => {
+  const batches = [];
+  const client = {
+    async execute() { return { rows: [] }; },
+    async batch(statements, mode) { batches.push({ statements, mode }); return []; },
+  };
+  const store = new TursoKnowledgeStore({
+    url: 'libsql://example.turso.io',
+    authToken: 'test-token',
+    clientFactory: () => client,
+  });
+  await store.save(profileId, 'practice', `bash 55% (55%)  sword 75% (75%)
+You have 7 practice sessions left.`);
+  assert.ok(batches[0].statements.some(statement => statement.sql.includes('DELETE FROM mud_practices')));
+  assert.equal(batches[0].statements.filter(statement => statement.sql.includes('INSERT INTO mud_practices')).length, 2);
+  await store.save(profileId, 'practice sword', `You practice sword.
+sword is now at 80 percent, 6 practices left.`);
+  const update = batches[1].statements.find(statement => statement.sql.includes('INSERT INTO mud_practices'));
+  assert.deepEqual(update.args.slice(0, 4), [profileId, 'sword', 80, 80]);
+  assert.equal(typeof update.args[4], 'string');
 });
 
 test('Turso reads join examined details to worn gear and retain the current score snapshot', async () => {
@@ -167,6 +195,9 @@ test('Turso reads join examined details to worn gear and retain the current scor
         updated_at: 'now',
       }] };
       if (statement.sql.includes('SELECT spell_name')) return { rows: [] };
+      if (statement.sql.includes('SELECT skill_name')) return { rows: [{
+        skill_name: 'sword', proficiency: 75, base_proficiency: 75, updated_at: 'now',
+      }] };
       if (statement.sql.includes('SELECT score_json, captured_at FROM mud_score_history')) return { rows: [
         { score_json: JSON.stringify({ alignment: 0 }), captured_at: 'now' },
       ] };
@@ -204,6 +235,9 @@ test('Turso reads join examined details to worn gear and retain the current scor
     name: 'shield', attribute: null, amount: null, duration: null,
   }]);
   assert.equal(result.equipment.length, 3);
+  assert.deepEqual(result.practiceSkills, [{
+    name: 'sword', proficiency: 75, baseProficiency: 75, updatedAt: 'now',
+  }]);
   assert.equal(result.equipmentAnalysis.equipped[0].examined.affects[0].amount, -10);
   assert.equal(result.equipmentAnalysis.unexamined.length, 2);
   assert.deepEqual(result.equipmentAnalysis.knownModifiers, { 'saving-spell': -10 });

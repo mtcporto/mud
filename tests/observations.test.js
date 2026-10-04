@@ -2,19 +2,23 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   commandCategory, createKnowledge, observe, parseCharacterCreation,
-  parseEquipment, parseExamine, parseObservation, parseScore, parseSpells, parseEffects, parseMap, parseRoom,
+  parseEquipment, parseExamine, parseObservation, parseScore, parseSpells, parsePractices,
+  parseEffects, parseMap, parseRoom,
 } from '../lib/observations.js';
 
 test('knowledge categorizes useful MUD reports without interpreting arbitrary output', () => {
   assert.deepEqual(commandCategory('examine silver sword'), { command: 'examine', subject: 'silver sword' });
+  assert.deepEqual(commandCategory('equipment'), { command: 'equip', subject: '' });
+  assert.deepEqual(commandCategory('practice sword'), { command: 'practice', subject: 'sword' });
+  assert.equal(commandCategory('look sign'), null);
   assert.equal(commandCategory('say score'), null);
   const knowledge = createKnowledge();
   observe(knowledge, 'score', 'Name: Ada\nClass: Mage\nRace: Elf');
   observe(knowledge, 'spells', 'fireball\nheal');
   observe(knowledge, 'equip', 'silver sword');
-  observe(knowledge, 'examine silver sword', 'Damage: 4-8\nArmor: 0');
+  observe(knowledge, 'examine silver sword', 'You see a silver sword of great but cheap craftsmanship.');
   assert.match(knowledge.score, /Class: Mage/);
-  assert.match(knowledge.examined['silver sword'], /Damage/);
+  assert.match(knowledge.examined['silver sword'], /silver sword/);
 });
 
 test('score, equipment, examined-item effects and spells are parsed into structured facts', () => {
@@ -84,6 +88,23 @@ Affects none by 0.`);
     { name: 'cure light', proficiency: 93, mana: 10 },
     { name: 'armor', proficiency: 100, mana: 5 },
   ]);
+  assert.deepEqual(parsePractices(`bash                   1% (  1%)  dagger                 1% (  1%)
+enhanced damage        1% (  1%)  sword                 58% ( 58%)
+You have 7 practice sessions left.`), {
+    remaining: 7,
+    complete: true,
+    skills: [
+      { name: 'bash', proficiency: 1, baseProficiency: 1 },
+      { name: 'dagger', proficiency: 1, baseProficiency: 1 },
+      { name: 'enhanced damage', proficiency: 1, baseProficiency: 1 },
+      { name: 'sword', proficiency: 58, baseProficiency: 58 },
+    ],
+  });
+  assert.deepEqual(parsePractices('You practice sword.\nsword is now at 75 percent, 14 practices left.'), {
+    remaining: 14,
+    complete: false,
+    skills: [{ name: 'sword', proficiency: 75, baseProficiency: 75 }],
+  });
 
   const activeEffects = parseEffects(`You are affected by the following spells:
 Spell: 'armor' modifies armor by -20 for 12 hours.
@@ -125,7 +146,22 @@ A plaque is here.
     exits: ['N', 'S', 'U'],
     visibleEntities: ['A plaque is here.'],
   });
-  assert.equal(parseObservation('look', roomText)?.subject, 'temple of fatal');
+  const temple = parseObservation('look', roomText);
+  assert.match(temple.subject, /^temple of fatal#[a-z0-9]+$/);
+  assert.equal(parseObservation('look', roomText)?.subject, temple.subject);
+  const mainStreetA = parseObservation('look', `Main Street
+You are on the main street passing through the city.
+To the north is a bakery.
+20/20hp 100/100ma 50mv | NS >`);
+  const mainStreetB = parseObservation('look', `Main Street
+You are on the main street passing through the city.
+To the south is an armoury.
+20/20hp 100/100ma 50mv | NS >`);
+  assert.notEqual(mainStreetA.subject, mainStreetB.subject);
+  assert.equal(parseObservation('look', `The tour guide says 'Welcome in the Immortals Hall'
+20/20hp 100/100ma 50mv | N >`), null);
+  assert.equal(parseObservation('examine belt', 'You see a belt of sturdy leather.')?.data.objectName, 'belt');
+  assert.equal(parseObservation('examine belt', 'You do not see that here.'), null);
 });
 
 test('character creation screens become structured options, skill choices, and XP costs without retaining prompt text', () => {
