@@ -28,6 +28,20 @@ test('Vercel knowledge API restricts browser origins and rejects invalid request
     body: { profile: '410b4c85-7ff2-4bd2-94bb-3e241e791c05', command: 'say hi', text: 'private message' },
   }, unknownCommand);
   assert.equal(unknownCommand.statusCode, 400);
+  assert.equal(unknownCommand.body.code, 'UNKNOWN_COMMAND');
+
+  const unparseableObservation = responseMock();
+  await handler({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: {
+      profile: '410b4c85-7ff2-4bd2-94bb-3e241e791c05',
+      command: 'examine missing item',
+      text: 'You do not see that here.',
+    },
+  }, unparseableObservation);
+  assert.equal(unparseableObservation.statusCode, 422);
+  assert.equal(unparseableObservation.body.code, 'OBSERVATION_NOT_PARSED');
 
   const unsupportedMethod = responseMock();
   await handler({ method: 'OPTIONS', headers: {}, query: {} }, unsupportedMethod);

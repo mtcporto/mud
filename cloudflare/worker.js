@@ -108,22 +108,43 @@ export class MudSession {
 
   async saveObservation(observation) {
     if (!this.profileId) return;
+    const category = commandCategory(observation.command)?.command || 'unknown';
+    let response;
     try {
-      const response = await fetch(new URL('/api/knowledge', this.apiOrigin), {
+      response = await fetch(new URL('/api/knowledge', this.apiOrigin), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profile: this.profileId, command: observation.command, text: observation.text }),
       });
-      if (!response.ok) throw new Error('Knowledge API rejected the observation.');
-    } catch {
-      this.reportSaveFailure();
+    } catch (error) {
+      this.reportSaveFailure(category, null, error instanceof Error ? error.name : 'UnknownError');
+      return;
+    }
+    if (response.ok) return;
+
+    const body = await response.json().catch(() => null);
+    const reason = typeof body?.error === 'string' ? body.error.slice(0, 160) : 'No API error detail';
+    const code = typeof body?.code === 'string' ? body.code.slice(0, 64) : null;
+    if (response.status >= 400 && response.status < 500) {
+      this.reportObservationRejected(category, response.status, code, reason);
+      return;
+    }
+    this.reportSaveFailure(category, response.status, code || reason);
+  }
+
+  reportObservationRejected(category, status, code, reason) {
+    console.warn('MUD observation rejected by knowledge API.', { category, status, code, reason });
+    if (this.client?.readyState === WebSocket.OPEN) {
+      const detail = code ? `, ${code}` : '';
+      this.client.send(new TextEncoder().encode(`\r\n[ Aviso: observacao ${category} rejeitada (HTTP ${status}${detail}). ]\r\n`));
     }
   }
 
-  reportSaveFailure() {
-    console.error('Could not save MUD knowledge to Turso.');
+  reportSaveFailure(category, status, reason) {
+    console.error('MUD observation persistence failed.', { category, status, reason });
     if (this.client?.readyState === WebSocket.OPEN) {
-      this.client.send(new TextEncoder().encode('\r\n[Erro: nao foi possivel salvar os dados do personagem no Turso.]\r\n'));
+      const cause = status === null ? 'falha de rede' : `HTTP ${status}`;
+      this.client.send(new TextEncoder().encode(`\r\n[Erro: falha ao salvar observacao ${category} (${cause}).]\r\n`));
     }
   }
 

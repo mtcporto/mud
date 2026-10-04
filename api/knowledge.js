@@ -1,4 +1,4 @@
-import { parseObservation } from '../lib/observations.js';
+import { commandCategory, parseObservation } from '../lib/observations.js';
 import { isProfileId } from '../lib/profile.js';
 import { tursoStore } from '../lib/turso.js';
 
@@ -38,8 +38,14 @@ export default async function handler(req, res) {
     }
     rawCommand = command;
     rawText = text;
+    if (!commandCategory(command)) return respond(res, 400, { error: 'Comando não reconhecido.', code: 'UNKNOWN_COMMAND' });
     observation = parseObservation(command, text);
-    if (!observation) return respond(res, 400, { error: 'Comando não reconhecido.' });
+    if (!observation) {
+      return respond(res, 422, {
+        error: 'A resposta do jogo não pôde ser interpretada.',
+        code: 'OBSERVATION_NOT_PARSED',
+      });
+    }
   }
 
   try {
