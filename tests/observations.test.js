@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  commandCategory, createKnowledge, observe, parseAffects, parseCharacterCreation,
-  parseEquipment, parseExamine, parseObservation, parseScore, parseSpells,
+  commandCategory, createKnowledge, observe, parseCharacterCreation,
+  parseEquipment, parseExamine, parseObservation, parseScore, parseSpells, parseEffects,
 } from '../lib/observations.js';
 
 test('knowledge categorizes useful MUD reports without interpreting arbitrary output', () => {
@@ -75,18 +75,20 @@ Affects none by 0.`);
     { name: 'armor', proficiency: 100, mana: 5 },
   ]);
 
-  const activeAffects = parseAffects(`You are affected by the following spells:
+  const activeEffects = parseEffects(`You are affected by the following spells:
 Spell: 'armor' modifies armor by -20 for 12 hours.
 Spell: 'bless' modifies hitroll by 2 for 8 hours.`);
-  assert.deepEqual(activeAffects, [
+  assert.deepEqual(activeEffects, [
     { name: 'armor', attribute: 'armor', amount: -20, duration: '12 hours' },
     { name: 'bless', attribute: 'hitroll', amount: 2, duration: '8 hours' },
   ]);
-  assert.deepEqual(commandCategory('affects'), { command: 'affect', subject: '' });
-  assert.deepEqual(commandCategory('effect'), { command: 'affect', subject: '' });
+  assert.deepEqual(commandCategory('effects'), { command: 'effect', subject: '' });
+  assert.deepEqual(commandCategory('affect'), { command: 'effect', subject: '' });
+  assert.deepEqual(commandCategory('affects'), { command: 'effect', subject: '' });
+  assert.deepEqual(commandCategory('effect'), { command: 'effect', subject: '' });
   const knowledge = createKnowledge();
-  observe(knowledge, 'affects', 'Spell: armor modifies armor by -20.');
-  assert.deepEqual(knowledge.activeAffects, [{
+  observe(knowledge, 'effect', 'Spell: armor modifies armor by -20.');
+  assert.deepEqual(knowledge.activeEffects, [{
     name: 'armor', attribute: 'armor', amount: -20, duration: null,
   }]);
 });

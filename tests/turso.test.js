@@ -49,7 +49,7 @@ test('Turso store validates opaque profiles and batches parsed observations safe
   assert.equal(scoreUpdate.args[0], 'Elvinn');
   assert.ok(batches[0].statements.some(statement => statement.sql.includes('INSERT INTO mud_score_history')));
 
-  await store.save(profileId, 'affects', `Spell: 'armor' modifies armor by -20 for 12 hours.`);
+  await store.save(profileId, 'effect', `Spell: 'armor' modifies armor by -20 for 12 hours.`);
   assert.equal(batches[1].statements.filter(statement => statement.sql.includes('INSERT INTO mud_active_affects')).length, 1);
   assert.deepEqual(
     batches[1].statements.find(statement => statement.sql.includes('INSERT INTO mud_active_affects')).args.slice(1, 5),
@@ -164,7 +164,7 @@ test('Turso reads join examined details to worn gear and retain the current scor
   const result = await store.get(profileId);
   assert.equal(result.profile.characterName, 'Elvinn');
   assert.deepEqual(result.scoreHistory, [{ score: { alignment: 0 }, capturedAt: 'now' }]);
-  assert.deepEqual(result.activeAffects, [{
+  assert.deepEqual(result.activeEffects, [{
     name: 'bless', attribute: 'hitroll', amount: 2, duration: '8 hours', updatedAt: 'now',
   }]);
   assert.equal(result.equipment.length, 3);
