@@ -50,11 +50,10 @@ test('Turso store validates opaque profiles and batches parsed observations safe
   assert.ok(batches[0].statements.some(statement => statement.sql.includes('INSERT INTO mud_score_history')));
 
   await store.save(profileId, 'effect', `Spell: 'armor' modifies armor by -20 for 12 hours.`);
-  assert.equal(batches[1].statements.filter(statement => statement.sql.includes('INSERT INTO mud_active_affects')).length, 1);
-  assert.deepEqual(
-    batches[1].statements.find(statement => statement.sql.includes('INSERT INTO mud_active_affects')).args.slice(1, 5),
-    ['armor', 'armor', -20, '12 hours'],
-  );
+  const effectObservation = batches[1].statements.find(statement => statement.sql.includes('INSERT INTO mud_observations'));
+  assert.deepEqual(JSON.parse(effectObservation.args[4]), [
+    { name: 'armor', attribute: 'armor', amount: -20, duration: '12 hours' },
+  ]);
 
   await store.save(profileId, 'equip', `<worn around wrist> Ammonet's Brassard
 <worn around wrist> Ammonet's Brassard`);
@@ -118,7 +117,14 @@ test('Turso reads join examined details to worn gear and retain the current scor
       if (statement.sql.includes('SELECT character_name')) return { rows: [{
         character_name: 'Elvinn', score_json: JSON.stringify({ name: 'Elvinn', level: 91 }), updated_at: '2026-10-03T00:00:00.000Z',
       }] };
-      if (statement.sql.includes('SELECT command')) return { rows: [] };
+      if (statement.sql.includes('SELECT command')) return { rows: [{
+        command: 'effect', subject: '', raw_text: '- protection good\n- shield',
+        data_json: JSON.stringify([
+          { name: 'protection good', attribute: null, amount: null, duration: null },
+          { name: 'shield', attribute: null, amount: null, duration: null },
+        ]),
+        updated_at: 'now',
+      }] };
       if (statement.sql.includes('SELECT slot')) return { rows: [
         { slot: 'worn about body', item_name: 'green robes', flags_json: '["Magical"]', updated_at: 'now' },
         { slot: 'worn around wrist', item_name: 'Ammonet Brassard', flags_json: '[]', updated_at: 'now' },
@@ -130,9 +136,6 @@ test('Turso reads join examined details to worn gear and retain the current scor
         updated_at: 'now',
       }] };
       if (statement.sql.includes('SELECT spell_name')) return { rows: [] };
-      if (statement.sql.includes('SELECT effect_name')) return { rows: [
-        { effect_name: 'bless', attribute: 'hitroll', amount: 2, duration: '8 hours', updated_at: 'now' },
-      ] };
       if (statement.sql.includes('SELECT score_json, captured_at FROM mud_score_history')) return { rows: [
         { score_json: JSON.stringify({ alignment: 0 }), captured_at: 'now' },
       ] };
@@ -165,7 +168,9 @@ test('Turso reads join examined details to worn gear and retain the current scor
   assert.equal(result.profile.characterName, 'Elvinn');
   assert.deepEqual(result.scoreHistory, [{ score: { alignment: 0 }, capturedAt: 'now' }]);
   assert.deepEqual(result.activeEffects, [{
-    name: 'bless', attribute: 'hitroll', amount: 2, duration: '8 hours', updatedAt: 'now',
+    name: 'protection good', attribute: null, amount: null, duration: null,
+  }, {
+    name: 'shield', attribute: null, amount: null, duration: null,
   }]);
   assert.equal(result.equipment.length, 3);
   assert.equal(result.equipmentAnalysis.equipped[0].examined.affects[0].amount, -10);

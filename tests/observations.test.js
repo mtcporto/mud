@@ -32,6 +32,16 @@ test('score, equipment, examined-item effects and spells are parsed into structu
   assert.deepEqual(score.resources.hit, { current: 7073, maximum: 7073 });
   assert.equal(score.experience, 113778);
   assert.equal(score.next_level, 1222);
+  const armor = parseScore(`Piercing: -10   Bashing: 2   Slashing: 0   Exotic: -8`);
+  assert.deepEqual(armor.armor, { piercing: -10, bashing: 2, slashing: 0, exotic: -8 });
+  const descriptiveArmor = parseScore(`Piercing: slightly armored    Bashing: slightly armored
+Slashing: slightly armored    Exotic: slightly armored`);
+  assert.deepEqual(descriptiveArmor.armor, {
+    piercing: 'slightly armored',
+    bashing: 'slightly armored',
+    slashing: 'slightly armored',
+    exotic: 'slightly armored',
+  });
   const status = parseScore(`Name : Luna            Level : 1
 Hunger : very        Thirst : very         Adrenaline : none
 Drunk : not          Gold : 548            Silver : 460
@@ -81,6 +91,12 @@ Spell: 'bless' modifies hitroll by 2 for 8 hours.`);
   assert.deepEqual(activeEffects, [
     { name: 'armor', attribute: 'armor', amount: -20, duration: '12 hours' },
     { name: 'bless', attribute: 'hitroll', amount: 2, duration: '8 hours' },
+  ]);
+  assert.deepEqual(parseEffects(`You are affected by the following spells.
+- protection good
+- shield`), [
+    { name: 'protection good', attribute: null, amount: null, duration: null },
+    { name: 'shield', attribute: null, amount: null, duration: null },
   ]);
   assert.deepEqual(commandCategory('effects'), { command: 'effect', subject: '' });
   assert.deepEqual(commandCategory('affect'), { command: 'effect', subject: '' });
