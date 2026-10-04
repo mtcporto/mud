@@ -1,8 +1,8 @@
 # Deploy Cloudflare
 
-Esta variante usa Workers Static Assets para a interface, um Durable Object por sessão e `cloudflare:sockets` para a conexão TCP persistente com `mud.fataldimensions.nl:4000`.
+O Worker usa um Durable Object por conexão para a ponte TCP e `cloudflare:sockets` para conectar a `mud.fataldimensions.nl:4000`. As observações são encaminhadas para a API `/api/knowledge` na Vercel; somente a Vercel acessa o Turso. O Durable Object **não** é usado como banco de conhecimento nem recebe secrets do Turso.
 
-Requer Wrangler autenticado (`npx wrangler login`) e uma conta Cloudflare com Durable Objects e TCP Sockets habilitados:
+Requer Wrangler autenticado (`npx wrangler login`) e uma conta Cloudflare com Durable Objects e TCP Sockets habilitados. Configure `TURSO_DATABASE_URL` e `TURSO_AUTH_TOKEN` como variáveis de ambiente no projeto Vercel `mud` (Settings → Environment Variables), e publique essa API antes do Worker. Nunca coloque os valores no Git nem no Cloudflare:
 
 ```sh
 cd cloudflare
@@ -10,4 +10,4 @@ npx wrangler dev
 npx wrangler deploy
 ```
 
-O Worker não usa Turso ainda. A base de conhecimento entra numa segunda etapa, depois de confirmar o comportamento da conexão real. O Durable Object atual isola uma sessão por conexão e fecha o socket quando o navegador sai.
+`TURSO_DATABASE_URL` deve ser a URL `libsql://...` do banco. As tabelas são criadas automaticamente na primeira captura. O Worker encaminha apenas respostas dos comandos reconhecidos; para sugestões, o perfil salvo só é enviado ao GPT-4o quando o usuário ativa o consentimento na interface. `Dados salvos do personagem` permite consultar ou apagar os registros daquele perfil de navegador.

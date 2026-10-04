@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
@@ -23,9 +24,12 @@ test('connected client sends blank Enter and only shares opted-in game output wi
     return elements.get(id);
   };
   let webSocket;
+  const profileId = randomUUID();
+  const localValues = new Map();
+  const requests = [];
   class WebSocket {
     static OPEN = 1;
-    constructor() { this.readyState = 0; this.sent = []; webSocket = this; }
+    constructor(url) { this.url = url; this.readyState = 0; this.sent = []; webSocket = this; }
     send(value) { this.sent.push(value); }
     close() { this.readyState = 3; this.onclose?.(); }
   }
@@ -33,9 +37,20 @@ test('connected client sends blank Enter and only shares opted-in game output wi
   const context = {
     document: { getElementById, createElement: () => new Element() },
     WebSocket,
+    crypto: { randomUUID: () => profileId },
+    localStorage: {
+      getItem: key => localValues.get(key) || null,
+      setItem: (key, value) => localValues.set(key, value),
+    },
+    confirm: () => true,
     AbortController,
     fetch: async (url, options) => {
       request = { url, options };
+      requests.push(request);
+      if (url.includes('/knowledge')) return {
+        ok: true,
+        json: async () => ({ profile: { characterName: 'Elvinn' }, equipmentAnalysis: { unexamined: [] } }),
+      };
       return { ok: true, json: async () => ({ explanation: 'Confira a sala.', command: 'look' }) };
     },
   };
@@ -43,6 +58,7 @@ test('connected client sends blank Enter and only shares opted-in game output wi
 
   const get = getElementById;
   get('connect').onclick();
+  assert.equal(webSocket.url, `wss://mud-fataldimensions.mosaicoworkers.workers.dev/api/ws?profile=${profileId}`);
   webSocket.readyState = WebSocket.OPEN;
   webSocket.onopen();
   assert.equal(get('sharing').disabled, false);
@@ -56,9 +72,16 @@ test('connected client sends blank Enter and only shares opted-in game output wi
   webSocket.onmessage({ data: 'nova sala\n' });
   await get('suggest').onclick();
   assert.equal(request.url, 'https://mud-fataldimensions.mosaicoworkers.workers.dev/api/suggest');
+  assert.equal(JSON.parse(request.options.body).profile, profileId);
   assert.equal(JSON.parse(request.options.body).context, 'nova sala\n');
   assert.equal(get('suggested-command').textContent, 'look');
 
   get('approve').onclick();
   assert.deepEqual(webSocket.sent, ['', 'look']);
+
+  await get('load-knowledge').onclick();
+  assert.match(get('saved-knowledge').textContent, /Elvinn/);
+  await get('clear-knowledge').onclick();
+  assert.equal(requests.at(-1).options.method, 'DELETE');
+  assert.match(get('saved-knowledge').textContent, /Dados apagados/);
 });

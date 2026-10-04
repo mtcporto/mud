@@ -1,6 +1,6 @@
 # MUD / Copiloto
 
-Cliente MUD em HTML, CSS e JavaScript, com uma ponte persistente Node.js → TCP/Telnet. Sem dependências npm de produção ou desenvolvimento. O único cliente é `index.html`; o antigo `mud-client.html` e os proxies WebSocket públicos foram removidos.
+Cliente MUD em HTML, CSS e JavaScript. O site Vercel usa um Cloudflare Worker como ponte TCP/Telnet e o Turso para persistir os dados estruturados do personagem. A implementação Node.js abaixo é uma alternativa local.
 
 ## Rodar localmente
 
@@ -22,15 +22,19 @@ O último comando disponibiliza http://127.0.0.1:3123 com jogo e IA simulados pa
 
 ## Base de conhecimento
 
-O servidor reconhece respostas posteriores a `score`, `spells`, `alias`, `equip` e `examine <item>`. Elas ficam estruturadas na sessão e podem ser consultadas em `GET /api/knowledge`; por enquanto são memória temporária, apagada ao desconectar ou reiniciar. Esse é o primeiro contrato para persistir depois em Turso: perfil do personagem, feitiços, aliases, equipamento e atributos de itens examinados. A captura não tenta adivinhar campos nem trata texto arbitrário como dado confiável.
+Na ponte Cloudflare, respostas de `score`, `spells`, `alias`, `equip`, `examine <item>` e `help` são persistidas no Turso em tabelas de observações, equipamento, itens examinados, feitiços e perfil. O esquema é criado automaticamente. Além do texto original, `score` extrai atributos/recursos/armadura; `equip` registra slot e flags; `examine` registra nível, valor, armadura, efeitos e imunidades; `spells` registra proficiência e custo de mana. Efeitos examinados ficam separados dos atributos atuais do `score`: o sistema não presume que consegue calcular causalidade ou somar valores incompatíveis.
+
+Os registros são separados por um identificador aleatório mantido no `localStorage` (não por conta/login), e a seção **Dados salvos do personagem** permite consultá-los e apagá-los. A captura é limitada aos comandos conhecidos; mensagens gerais, comandos privados e senhas não são persistidos. A ponte Cloudflare encaminha as observações para `/api/knowledge` na Vercel; somente a função da Vercel acessa o Turso. Configure `TURSO_DATABASE_URL` e `TURSO_AUTH_TOKEN` no projeto Vercel `mud`, nunca no Worker, navegador ou Git.
+
+O Worker usa somente a URL pública da API Vercel, sem credenciais do banco. A versão local alternativa em Node mantém a base de conhecimento apenas na sessão; a persistência Turso é implementada na API Vercel usada pelo site.
 
 ## Copiloto e privacidade
 
-O servidor chama `https://copilot-mtcporto.vercel.app/v1/chat/completions` com `gpt-4o`, sem chave. Depois do login, ative o compartilhamento e use `look`: somente as mensagens posteriores entram no contexto (máximo de 12.000 caracteres). Desativar o compartilhamento apaga o contexto e cancela a solicitação em andamento. O serviço externo recebe esse texto; não compartilhe dados privados do jogo.
+O servidor chama `https://copilot-mtcporto.vercel.app/v1/chat/completions` com `gpt-4o`, sem chave. Depois do login, ative o compartilhamento: somente as mensagens posteriores entram no contexto (máximo de 12.000 caracteres), junto com os dados de personagem salvos no Turso. Desativar o compartilhamento cancela a solicitação em andamento. O serviço externo recebe esses dados quando você pede uma sugestão; não compartilhe informações privadas do jogo.
 
 Cada sugestão precisa de aprovação manual. Não existe execução autônoma. A resposta é validada e uma mudança no cenário invalida sugestões pendentes. Texto do jogo e da IA é exibido com `textContent`, nunca como HTML.
 
-Marque **Entrada privada** antes de enviar senha. Ela não é ecoada pelo cliente nem adicionada ao histórico de comandos; a análise é desligada. Prompts comuns de senha e negociação Telnet ECHO também ativam esse modo, mas não substituem a escolha manual em jogos com prompts diferentes. Não há armazenamento em disco ou localStorage de mensagens, senhas ou histórico. O servidor conserva um buffer limitado de saída do jogo para reconectar o canal de mensagens; o próprio jogo pode ecoar informações que você enviar. Telnet é TCP sem criptografia entre a ponte e o jogo.
+Marque **Entrada privada** antes de enviar senha. Ela não é ecoada pelo cliente nem adicionada ao histórico de comandos; a análise é desligada. Prompts comuns de senha e negociação Telnet ECHO também ativam esse modo, mas não substituem a escolha manual em jogos com prompts diferentes. Não há armazenamento de mensagens gerais, senhas ou histórico no navegador ou no Turso; apenas o identificador aleatório do perfil fica no `localStorage`. O servidor conserva um buffer limitado de saída do jogo para reconectar o canal de mensagens; o próprio jogo pode ecoar informações que você enviar. Telnet é TCP sem criptografia entre a ponte e o jogo.
 
 ## Proteções e limites
 
@@ -41,8 +45,6 @@ Marque **Entrada privada** antes de enviar senha. Ela não é ecoada pelo client
 - Sessão expira após 30 minutos sem ação; abandonar o canal de mensagens por 90 segundos também encerra a conexão (verificação a cada 15 segundos).
 - Reconectar SSE mantém a conexão TCP e repete a saída recente. Reiniciar o processo encerra as sessões. Uma aba por sessão é suportada.
 
-## Hospedagem — decisão pendente
+## Hospedagem
 
-Esta arquitetura precisa de um processo Node persistente com saída TCP liberada e proxy reverso HTTPS que suporte SSE sem buffering. O deploy estático/serverless anterior na Vercel não executa esta ponte. **Não promover este rework sobre o site atual antes de escolher a hospedagem.**
-
-Em produção configure `NODE_ENV=production`, `PUBLIC_ORIGIN` com a origem HTTPS exata e `HOST` conforme a rede do servidor. Use uma única instância inicialmente: sessões e limites ficam em memória. Cabeçalhos de IP encaminhados não são confiados; atrás de um proxy, limites por IP podem ser compartilhados por todos os usuários. Antes de publicação, ajustar isso à hospedagem escolhida e testar HTTPS/cookies/SSE e a conexão real ao jogo. Para múltiplas instâncias será necessário projetar afinidade de sessão e limites compartilhados.
+O Worker ativo está em `cloudflare/`. Consulte [cloudflare/README.md](./cloudflare/README.md) para configurar secrets do Turso e publicar alterações. O processo Node local não persiste observações no Turso.
