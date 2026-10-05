@@ -25,7 +25,7 @@ test('Vercel knowledge API restricts browser origins and rejects invalid request
   await handler({
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: { profile: '410b4c85-7ff2-4bd2-94bb-3e241e791c05', command: 'say hi', text: 'private message' },
+    body: { profile: '410b4c85-7ff2-4bd2-94bb-3e241e791c05', command: 'dance hi', text: 'untracked output' },
   }, unknownCommand);
   assert.equal(unknownCommand.statusCode, 400);
   assert.equal(unknownCommand.body.code, 'UNKNOWN_COMMAND');

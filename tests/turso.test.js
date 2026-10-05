@@ -36,7 +36,7 @@ test('Turso store validates opaque profiles and batches parsed observations safe
   assert.deepEqual(perspective.unexamined, [{ slot: 'worn around wrist', name: 'Ammonet Brassard' }]);
   assert.deepEqual(perspective.knownModifiers, { 'saving-spell': -10 });
   assert.deepEqual(perspective.knownImmunities, ['poison']);
-  assert.equal(await store.save(profileId, 'say hello', 'untracked output'), false);
+  assert.equal(await store.save(profileId, 'drink water', 'untracked output'), false);
   assert.equal(await store.save(profileId, 'score', 'Name : Elvinn Level : 91\nStr: 16 (20) Hit: 7073/7073'), true);
 
   assert.equal(executed.length, 16);
@@ -67,6 +67,27 @@ test('Turso store validates opaque profiles and batches parsed observations safe
   await store.clear(profileId);
   assert.equal(batches[4].statements.length, 10);
   assert.ok(batches[4].statements.every(statement => statement.args[0] === profileId));
+});
+
+test('Turso persists command discoveries as reusable observations', async () => {
+  const batches = [];
+  const store = new TursoKnowledgeStore({
+    url: 'libsql://example.turso.io',
+    authToken: 'test-token',
+    clientFactory: () => ({
+      async execute() { return { rows: [] }; },
+      async batch(statements, mode) { batches.push({ statements, mode }); return []; },
+    }),
+  });
+  for (const command of ['skills', 'quest', 'exits', 'consider goblin', 'say questmaster']) {
+    assert.equal(await store.save(profileId, command, `Observed response for ${command}.`), true);
+  }
+  assert.equal(batches.length, 5);
+  for (const [index, command] of ['skills', 'quest', 'exits', 'consider goblin', 'say questmaster'].entries()) {
+    const observation = batches[index].statements.find(statement => statement.sql.includes('INSERT INTO mud_observations'));
+    assert.equal(observation.args[1], command.split(' ')[0]);
+    assert.equal(observation.args[3], `Observed response for ${command}.`);
+  }
 });
 
 test('Turso stores creation catalogs, per-character choices, and a sanitized structured snapshot', async () => {

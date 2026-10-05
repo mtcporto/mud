@@ -27,6 +27,13 @@ test('connected client sends blank Enter and only shares opted-in game output wi
   const profileId = randomUUID();
   const localValues = new Map();
   const requests = [];
+  const windowEvents = [];
+  class Event {
+    constructor(type) { this.type = type; }
+  }
+  class CustomEvent extends Event {
+    constructor(type, options) { super(type); this.detail = options.detail; }
+  }
   class WebSocket {
     static OPEN = 1;
     constructor(url) { this.url = url; this.readyState = 0; this.sent = []; webSocket = this; }
@@ -43,6 +50,9 @@ test('connected client sends blank Enter and only shares opted-in game output wi
       setItem: (key, value) => localValues.set(key, value),
     },
     confirm: () => true,
+    window: { dispatchEvent: event => windowEvents.push(event) },
+    Event,
+    CustomEvent,
     AbortController,
     fetch: async (url, options) => {
       request = { url, options };
@@ -61,6 +71,7 @@ test('connected client sends blank Enter and only shares opted-in game output wi
   assert.equal(webSocket.url, `wss://mud-fataldimensions.mosaicoworkers.workers.dev/api/ws?profile=${profileId}`);
   webSocket.readyState = WebSocket.OPEN;
   webSocket.onopen();
+  assert.equal(windowEvents[0].type, 'mud-agent-connected');
   assert.equal(get('sharing').disabled, false);
   get('command').value = '';
   get('command-form').onsubmit({ preventDefault() {} });
@@ -84,6 +95,7 @@ test('connected client sends blank Enter and only shares opted-in game output wi
   get('sharing').checked = true;
   get('sharing').onchange();
   webSocket.onmessage({ data: 'nova sala\n' });
+  assert.ok(windowEvents.some(event => event.type === 'mud-agent-output' && event.detail === 'nova sala\n'));
   await get('suggest').onclick();
   assert.equal(request.url, '/api/suggest');
   assert.equal(JSON.parse(request.options.body).profile, profileId);

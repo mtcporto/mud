@@ -1,10 +1,19 @@
 <!doctype html>
 <html lang="pt-BR">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MUD · Copiloto</title><link rel="stylesheet" href="/styles.css"><script type="module" src="/app.js?v=turso-knowledge"></script></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MUD · Copiloto</title><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/agent.css"><script type="module" src="/app.js?v=autonomous-agent"></script><script type="module" src="/agent-controller.js?v=google-auth"></script><script type="module" src="/auth-controller.js?v=google-auth"></script></head>
 <body>
 <header><div><span class="eyebrow">AVENTURA EM TEXTO</span><h1>MUD <span>/ Copiloto</span></h1></div><span id="status" role="status">Desconectado</span></header>
 <main>
 <section class="connection" aria-label="Conexão"><label for="target">Mundo</label><select id="target"></select><button id="connect" disabled>Conectar</button><button id="disconnect" disabled class="secondary">Desconectar</button><span id="duration">00:00</span></section>
+<section class="auth-control" aria-label="Autenticação Google">
+<span id="google-auth-status" role="status" aria-live="polite">Verificando login Google…</span>
+<button id="google-login" disabled>Entrar com Google</button>
+<button id="google-logout" class="secondary" hidden>Sair</button>
+</section>
+<section id="agent-control" class="agent-control" aria-label="Agente autônomo" hidden>
+<button id="agent-toggle" disabled aria-pressed="false">Ligar agente Luna</button>
+<p id="agent-status" role="status" aria-live="polite">Conecte Luna e faça login; mantenha esta aba aberta durante a execução.</p>
+</section>
 <p id="notice" role="status" aria-live="polite">Escolha um mundo para começar.</p>
 <div class="workspace">
 <section class="game" aria-label="Terminal do jogo"><div class="bar"><span>TERMINAL</span><button id="clear" class="link">Limpar tela</button></div><pre id="terminal" tabindex="0" aria-label="Mensagens do jogo"></pre>

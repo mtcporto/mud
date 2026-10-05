@@ -8,9 +8,13 @@ import { parseTargets, resolvePublicTarget } from './lib/network.js';
 import { TelnetDecoder, encodeCommand } from './lib/telnet.js';
 import { suggestCommand } from './lib/copilot.js';
 import { createKnowledge, observe, publicKnowledge } from './lib/observations.js';
+import googleCallback from './api/auth/google/callback.js';
+import googleStart from './api/auth/google/start.js';
+import googleLogout from './api/auth/logout.js';
+import googleSession from './api/auth/session.js';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
-const STATIC = new Map([['/', ['index.html','text/html']], ['/index.html',['index.html','text/html']], ['/app.js',['public/app.js','text/javascript']], ['/styles.css',['public/styles.css','text/css']]]);
+const STATIC = new Map([['/', ['index.html','text/html']], ['/index.html',['index.html','text/html']], ['/app.js',['public/app.js','text/javascript']], ['/agent-controller.js',['public/agent-controller.js','text/javascript']], ['/auth-controller.js',['public/auth-controller.js','text/javascript']], ['/agent.css',['public/agent.css','text/css']], ['/styles.css',['public/styles.css','text/css']]]);
 const COOKIE = 'mud_session';
 const fail = (status, message) => Object.assign(new Error(message), { status });
 
@@ -138,6 +142,14 @@ export function createMudServer({ targets = parseTargets(process.env.MUD_TARGETS
       }
       if (url.pathname === '/health' && req.method === 'GET') return json(res, 200, { ok: true });
       if (url.pathname === '/api/config' && req.method === 'GET') return json(res, 200, { targets: targets.map(({ id, name, host, port }) => ({ id, name, host, port })) });
+      const googleAuthRoutes = new Map([
+        ['/api/auth/google/start', googleStart],
+        ['/api/auth/google/callback', googleCallback],
+        ['/api/auth/session', googleSession],
+        ['/api/auth/logout', googleLogout],
+      ]);
+      const googleAuthHandler = googleAuthRoutes.get(url.pathname);
+      if (googleAuthHandler) return await googleAuthHandler(req, res);
       if (!url.pathname.startsWith('/api/')) throw fail(404, 'Página não encontrada.');
       if (req.headers['sec-fetch-site'] === 'cross-site') throw fail(403, 'Origem não permitida.');
       if (req.method !== 'GET' && req.method !== 'POST') throw fail(405, 'Método não permitido.');

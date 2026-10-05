@@ -28,7 +28,10 @@ function knowledgeContext(knowledge) {
     spells: knowledge.spells,
     practiceSkills: knowledge.practiceSkills,
     commands: observations
-      .filter(observation => ['alias', 'help', 'map'].includes(observation.command))
+      .filter(observation => [
+        'alias', 'help', 'map', 'skills', 'quest', 'quests', 'exit', 'exits',
+        'consider', 'where', 'hunt',
+      ].includes(observation.command))
       .map(({ command, raw }) => ({ command, raw })),
     rooms: observations
       .filter(observation => observation.command === 'look')

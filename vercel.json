@@ -8,6 +8,9 @@
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1.js" },
     { "src": "/app.js", "dest": "/public/app.js" },
+    { "src": "/agent-controller.js", "dest": "/public/agent-controller.js" },
+    { "src": "/auth-controller.js", "dest": "/public/auth-controller.js" },
+    { "src": "/agent.css", "dest": "/public/agent.css" },
     { "src": "/styles.css", "dest": "/public/styles.css" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]

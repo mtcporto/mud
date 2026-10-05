@@ -156,8 +156,15 @@ export class MudSession {
         this.observationTimer = null;
       } else this.flushObservation();
     }
-    if (commandCategory(command)) {
-      this.pendingObservation = { command: command.trim(), text: '', promptTail: '', waitingForContinue: false };
+    const category = commandCategory(command);
+    const movement = /^(?:n|north|s|south|e|east|w|west|u|up|d|down)$/i.test(command.trim());
+    if (category || movement) {
+      this.pendingObservation = {
+        command: category ? command.trim() : 'look',
+        text: '',
+        promptTail: '',
+        waitingForContinue: false,
+      };
     }
     await this.writer.write(new TextEncoder().encode(`${command}\r\n`));
   }

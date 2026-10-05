@@ -10,8 +10,11 @@ test('knowledge categorizes useful MUD reports without interpreting arbitrary ou
   assert.deepEqual(commandCategory('examine silver sword'), { command: 'examine', subject: 'silver sword' });
   assert.deepEqual(commandCategory('equipment'), { command: 'equip', subject: '' });
   assert.deepEqual(commandCategory('practice sword'), { command: 'practice', subject: 'sword' });
+  assert.deepEqual(commandCategory('skills'), { command: 'skills', subject: '' });
+  assert.deepEqual(commandCategory('quest'), { command: 'quest', subject: '' });
+  assert.deepEqual(commandCategory('consider goblin'), { command: 'consider', subject: 'goblin' });
+  assert.deepEqual(commandCategory('say questmaster'), { command: 'say', subject: 'questmaster' });
   assert.equal(commandCategory('look sign'), null);
-  assert.equal(commandCategory('say score'), null);
   const knowledge = createKnowledge();
   observe(knowledge, 'score', 'Name: Ada\nClass: Mage\nRace: Elf');
   observe(knowledge, 'spells', 'fireball\nheal');
@@ -19,6 +22,7 @@ test('knowledge categorizes useful MUD reports without interpreting arbitrary ou
   observe(knowledge, 'examine silver sword', 'You see a silver sword of great but cheap craftsmanship.');
   assert.match(knowledge.score, /Class: Mage/);
   assert.match(knowledge.examined['silver sword'], /silver sword/);
+  assert.equal(parseObservation('quests', 'Quest journal output')?.raw, 'Quest journal output');
 });
 
 test('score, equipment, examined-item effects and spells are parsed into structured facts', () => {

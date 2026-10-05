@@ -42,6 +42,8 @@ test('agent Telnet authenticates privately, handles fragmented prompts and pagin
         } else if (passwordSent && command === 'c') {
           socket.write('A second page.\r\n131/131hp 121/121ma 30mv | N > ');
           setTimeout(() => socket.write('An unsolicited tell.\r\n'), 5);
+        } else if (passwordSent && command === 'south') {
+          socket.write('Quiet Lane\r\nA narrow lane beside the square.\r\n[Exits: north]\r\n131/131hp 121/121ma 30mv | N > ');
         }
       }
     });
@@ -84,6 +86,14 @@ test('agent Telnet authenticates privately, handles fragmented prompts and pagin
   assert.doesNotMatch(apiPayload.text, /Fixture banner|Password|Login complete|press RETURN|fixture-only-password/i);
   assert.deepEqual(result.persistence, { saved: true });
   assert.equal(await session.read(), 'An unsolicited tell.\n');
+  const movement = await session.send('south');
+  assert.match(movement.output, /Quiet Lane/);
+  assert.deepEqual(apiPayload, {
+    profile: PROFILE_ID,
+    command: 'look',
+    text: movement.output,
+  });
+  assert.deepEqual(movement.persistence, { saved: true });
   await session.disconnect();
   assert.equal(peers.size, 0);
 });
