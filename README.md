@@ -38,7 +38,7 @@ O Worker usa somente a URL pública da API Vercel, sem credenciais do banco. A v
 
 ## Copiloto e privacidade
 
-O servidor chama `https://copilot-mtcporto.vercel.app/v1/chat/completions` com `gpt-4o`, sem chave. Depois do login, ative o compartilhamento: somente as mensagens posteriores entram no contexto (máximo de 12.000 caracteres), junto com os dados de personagem salvos no Turso. Desativar o compartilhamento cancela a solicitação em andamento. O serviço externo recebe esses dados quando você pede uma sugestão; não compartilhe informações privadas do jogo.
+Por padrão, o servidor chama `https://copilot-mtcporto.vercel.app/v1/chat/completions` com `gpt-4o`, sem chave. Para usar outro serviço compatível com a API OpenAI, configure `AI_BASE_URL` (a URL base ou o endpoint `/chat/completions`) e `AI_MODEL` no projeto Vercel `mud`; URLs devem usar HTTPS, exceto serviços HTTP em localhost. `IA_BASE_URL` e `MODEL` continuam aceitos como nomes antigos na configuração local. A página envia sugestões para a API da Vercel, que chama o serviço configurado no servidor; a Cloudflare Worker continua responsável pelo WebSocket do MUD. Depois do login, ative o compartilhamento: somente as mensagens posteriores entram no contexto (máximo de 12.000 caracteres), junto com os dados de personagem salvos no Turso. Desativar o compartilhamento cancela a solicitação em andamento. O serviço externo recebe esses dados quando você pede uma sugestão; não compartilhe informações privadas do jogo.
 
 Cada sugestão precisa de aprovação manual. Não existe execução autônoma. A resposta é validada e uma mudança no cenário invalida sugestões pendentes. Texto do jogo e da IA é exibido com `textContent`, nunca como HTML.
 

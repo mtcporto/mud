@@ -31,13 +31,20 @@ test('outbound Telnet handles legacy accents, IAC escaping and blank commands',(
   assert.deepEqual([...encodeCommand('')],[13,10]);
   assert.throws(()=>encodeCommand('😀','windows-1252'));
 });
-test('copilot uses keyless GPT-4o and rejects unsafe or incomplete output', async () => {
+test('copilot uses the configured OpenAI-compatible endpoint/model and rejects unsafe or incomplete output', async () => {
   const result = await suggestCommand('Sala fictícia.', async (url, options) => {
     assert.equal(url,'https://copilot-mtcporto.vercel.app/v1/chat/completions');
     assert.equal(options.headers.Authorization,undefined); assert.equal(JSON.parse(options.body).model,'gpt-4o');
     return response();
   });
   assert.equal(result.command,'look');
+  const configured = await suggestCommand('Sala fictícia.', async (url, options) => {
+    assert.equal(url,'https://ai.example/api/v1/chat/completions');
+    assert.equal(JSON.parse(options.body).model,'example-model');
+    return response('north',{model:'example-model'});
+  }, undefined, {baseUrl:'https://ai.example/api/v1',model:'example-model'});
+  assert.equal(configured.command,'north');
+  await assert.rejects(suggestCommand('room',async () => response(),undefined,{baseUrl:'http://example.com',model:'model'}));
   for (const command of ['look\nnorth','look;north','delete character','']) await assert.rejects(suggestCommand('room',async () => response(command)));
   await assert.rejects(suggestCommand('room',async () => response('look',{model:'other'})));
   await assert.rejects(suggestCommand('room',async () => response('look',{choices:[{finish_reason:'length'}]})));

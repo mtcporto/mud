@@ -1,4 +1,4 @@
-const $=id=>document.getElementById(id), BRIDGE='wss://mud-fataldimensions.mosaicoworkers.workers.dev/api/ws', API='/api', SUGGEST='https://mud-fataldimensions.mosaicoworkers.workers.dev/api/suggest'; let socket, shareStart=0, suggestionController;
+const $=id=>document.getElementById(id), BRIDGE='wss://mud-fataldimensions.mosaicoworkers.workers.dev/api/ws', API='/api', SUGGEST='/api/suggest'; let socket, shareStart=0, suggestionController;
 function profileId(){const key='mud-copilot-profile';let id=localStorage.getItem(key);if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id||'')){id=crypto.randomUUID();localStorage.setItem(key,id);}return id;}
 const ansi={telnet:'text',mode:'',params:'',style:{}}; const palette=['#000','#a00','#0a0','#a50','#00a','#a0a','#0aa','#aaa','#555','#f55','#5f5','#ff5','#55f','#f5f','#5ff','#fff'];
 const color=n=>n<16?palette[n]:n>=232?`#${(8+(n-232)*10).toString(16).padStart(2,'0').repeat(3)}`:(()=>{const l=[0,95,135,175,215,255],x=n-16;return '#'+[l[Math.floor(x/36)],l[Math.floor(x/6)%6],l[x%6]].map(v=>v.toString(16).padStart(2,'0')).join('')})();

@@ -85,7 +85,7 @@ test('connected client sends blank Enter and only shares opted-in game output wi
   get('sharing').onchange();
   webSocket.onmessage({ data: 'nova sala\n' });
   await get('suggest').onclick();
-  assert.equal(request.url, 'https://mud-fataldimensions.mosaicoworkers.workers.dev/api/suggest');
+  assert.equal(request.url, '/api/suggest');
   assert.equal(JSON.parse(request.options.body).profile, profileId);
   assert.equal(JSON.parse(request.options.body).context, 'nova sala\n');
   assert.equal(get('suggested-command').textContent, 'look');
