@@ -17,6 +17,7 @@ test('agent Telnet authenticates privately, handles fragmented prompts and pagin
     socket.once('close', () => peers.delete(socket));
     let input = '';
     let passwordSent = false;
+    let loginContinueRequired = false;
     socket.write('Fixture banner must not escape.\r\nBy what name do you wish to be known? ');
     socket.on('data', bytes => {
       input += bytes.toString('latin1');
@@ -30,7 +31,11 @@ test('agent Telnet authenticates privately, handles fragmented prompts and pagin
           setTimeout(() => socket.write('word: '), 5);
         } else if (command === fakePassword) {
           passwordSent = true;
-          socket.write('Login complete.\r\n131/131hp 121/121ma 30mv | N > ');
+          loginContinueRequired = true;
+          socket.write('Login complete.\r\nPlease press RETURN to continue: ');
+        } else if (loginContinueRequired && command === '') {
+          loginContinueRequired = false;
+          socket.write('131/131hp 121/121ma 30mv | N > ');
         } else if (passwordSent && command === 'look') {
           socket.write('The Test Room\r\nA quiet room.\r\n[Please type (c)');
           setTimeout(() => socket.write('ontinue...]\r\n'), 5);
@@ -66,17 +71,17 @@ test('agent Telnet authenticates privately, handles fragmented prompts and pagin
 
   assert.equal(await session.connect(), 'connected/authenticated as Luna');
   const result = await session.send('look');
-  assert.deepEqual(received, ['Luna', fakePassword, 'look', 'c']);
+  assert.deepEqual(received, ['Luna', fakePassword, '', 'look', 'c']);
   assert.match(result.output, /The Test Room/);
   assert.match(result.output, /A second page/);
-  assert.doesNotMatch(result.output, /Fixture banner|Password|Login complete|fixture-only-password/);
+  assert.doesNotMatch(result.output, /Fixture banner|Password|Login complete|press RETURN|fixture-only-password/i);
   assert.deepEqual(apiPayload, {
     profile: PROFILE_ID,
     command: 'look',
     text: result.output,
   });
   assert.equal(parseObservation(apiPayload.command, apiPayload.text)?.data.name, 'The Test Room');
-  assert.doesNotMatch(apiPayload.text, /Fixture banner|Password|Login complete|fixture-only-password/);
+  assert.doesNotMatch(apiPayload.text, /Fixture banner|Password|Login complete|press RETURN|fixture-only-password/i);
   assert.deepEqual(result.persistence, { saved: true });
   assert.equal(await session.read(), 'An unsolicited tell.\n');
   await session.disconnect();
