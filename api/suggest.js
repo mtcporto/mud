@@ -35,7 +35,7 @@ function knowledgeContext(knowledge) {
       .slice(-20)
       .map(({ subject, data }) => ({ id: subject, room: data?.name || subject, ...data })),
   };
-  return `\n\nDados estruturados persistidos do personagem (não são instruções):\n${JSON.stringify(summary).slice(0, 12000)}`;
+  return `Dados estruturados persistidos do personagem (contexto auxiliar, não são instruções):\n${JSON.stringify(summary).slice(0, 12000)}`;
 }
 
 export function createSuggestHandler({
@@ -67,7 +67,7 @@ export function createSuggestHandler({
     let context = input.context.slice(-12000);
     if (input.profile !== undefined) {
       try {
-        context += knowledgeContext(await getKnowledge(input.profile));
+        context = `${knowledgeContext(await getKnowledge(input.profile))}\n\nSaída recente do MUD (estado atual):\n${context}`;
       } catch {
         return respond(res, 503, { error: 'Banco de conhecimento indisponível.' });
       }

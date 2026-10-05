@@ -66,6 +66,7 @@ test('Vercel suggestion API validates inputs and routes through the configured m
   assert.equal(requestedProfile, '410b4c85-7ff2-4bd2-94bb-3e241e791c05');
   assert.match(receivedPayload.messages[1].content, /A sala atual tem uma saída ao sul/);
   assert.match(receivedPayload.messages[1].content, /Town Square/);
+  assert.ok(receivedPayload.messages[1].content.indexOf('Saída recente do MUD (estado atual)') > receivedPayload.messages[1].content.indexOf('Town Square'));
   assert.doesNotMatch(receivedPayload.messages[1].content, /private text/);
 
   const blocked = responseMock();
