@@ -22,11 +22,13 @@ O último comando disponibiliza http://127.0.0.1:3123 com jogo e IA simulados pa
 
 ### Cliente Telnet do agente (MVP)
 
-O comando `npm run agent:luna` abre uma única sessão TCP/Telnet persistente para `mud.fataldimensions.nl:4000`, autentica, executa `look`, envia a observação para a mesma API `/api/knowledge` e desconecta. Ele usa `lib/telnet.js`, `lib/observations.js` por meio da API existente, e não altera o cliente web nem chama o LLM.
+O comando `npm run agent:luna` abre uma única sessão TCP/Telnet persistente para `mud.fataldimensions.nl:4000`, autentica, retoma a personagem de `AUTO-AFK` com Enter quando necessário, executa `look`, envia a observação para a mesma API `/api/knowledge` e desconecta. Ele usa `lib/telnet.js`, `lib/observations.js` por meio da API existente, e não altera o cliente web nem chama o LLM.
 
 Configure `MUD_USERNAME`, `MUD_PASSWORD`, `MUD_PROFILE_ID` e, opcionalmente, `MUD_API_ORIGIN` no `.env` local ignorado pelo Git. O template sem credenciais está em `.env.agent.example`. Para unir registros do navegador, `MUD_PROFILE_ID` deve ser o UUID armazenado na chave `mud-copilot-profile` do `localStorage`; outro UUID grava no mesmo Turso, mas em perfil separado. O código nunca imprime a senha, inclui-a numa requisição de conhecimento ou retorna o transcript de login. Se usuário/senha estiverem ausentes, o cliente encerra com `MUD credentials are not configured.`. Não coloque a senha na conversa ou no repositório.
 
 Para um teste limitado com IA via Telnet, use `npm run agent:luna:ai`. O controlador consulta a API de sugestões da Vercel e executa no máximo três ações informativas, de exame ou movimento; pausa diante de combate, movimento inválido ou HP abaixo de 50%, e rejeita ações fora dessa lista segura. Isso é um teste supervisionado e limitado, não um loop autônomo de leveling.
+
+Para inspecionar manualmente o protocolo Telnet, desconecte Luna no cliente web e execute `node --env-file-if-exists=.env.example scripts/telnet-debug.js` (ou `npm run telnet:debug` com `.env` local). O diagnóstico oculta todo o texto durante nome/senha; após enviar a senha, exibe a saída decodificada e aceita respostas/comandos pelo terminal, sem chamar IA nem API de conhecimento. Senhas refletidas pelo servidor são mascaradas.
 
 ## Base de conhecimento
 

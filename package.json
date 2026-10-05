@@ -10,8 +10,9 @@
     "start": "node --env-file-if-exists=.env server.js",
     "agent:luna": "node --env-file-if-exists=.env scripts/luna-mud.js",
     "agent:luna:ai": "node --env-file-if-exists=.env scripts/luna-ai.js",
+    "telnet:debug": "node --env-file-if-exists=.env scripts/telnet-debug.js",
     "test": "node --test tests/*.test.js",
-    "check": "node --check server.js && node --check scripts/luna-mud.js && node --check scripts/luna-ai.js && node --check lib/agent-play.js && node --check lib/agent-telnet.js && node --check public/app.js && node --check api/knowledge.js && node --check api/suggest.js && node --check cloudflare/worker.js && node --check lib/observations.js && node --check lib/profile.js && node --check lib/telnet.js && node --check lib/turso.js"
+    "check": "node --check server.js && node --check scripts/luna-mud.js && node --check scripts/luna-ai.js && node --check scripts/telnet-debug.js && node --check lib/agent-play.js && node --check lib/agent-telnet.js && node --check lib/secret-redactor.js && node --check public/app.js && node --check api/knowledge.js && node --check api/suggest.js && node --check cloudflare/worker.js && node --check lib/observations.js && node --check lib/profile.js && node --check lib/telnet.js && node --check lib/turso.js"
   },
   "dependencies": {
     "@libsql/client": "^0.18.0"
