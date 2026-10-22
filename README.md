@@ -72,3 +72,8 @@ Marque **Entrada privada** antes de enviar senha. Ela não é ecoada pelo client
 ## Hospedagem
 
 O Worker ativo está em `cloudflare/`. Consulte [cloudflare/README.md](./cloudflare/README.md) para configurar secrets do Turso e publicar alterações. O processo Node local não persiste observações no Turso.
+
+
+## Desenvolvimento
+
+Baseline: Node.js 24.x. Consulte o `package.json` para instalação, validação e execução.
